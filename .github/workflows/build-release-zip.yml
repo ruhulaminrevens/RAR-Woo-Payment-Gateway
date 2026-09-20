@@ -1,0 +1,83 @@
+name: Build Installable Plugin ZIP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "rar-woo-advance-payment.php"
+      - "includes/**"
+      - "assets/**"
+      - "readme.txt"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "uninstall.php"
+      - ".github/workflows/build-release-zip.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          VERSION="$(grep -m1 -E '^ \* Version:' rar-woo-advance-payment.php | sed -E 's/.*Version:[[:space:]]*//')"
+          test -n "$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Validate PHP
+        shell: bash
+        run: |
+          find . -type f -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
+
+      - name: Validate JavaScript
+        shell: bash
+        run: |
+          node --check assets/js/checkout.js
+
+      - name: Build WordPress installable ZIP
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PKG="rar-woo-advance-payment"
+          OUT="RAR-Woo-Payment-Gateway-v${VERSION}.zip"
+
+          rm -rf build
+          mkdir -p "build/${PKG}" releases
+
+          cp -R assets "build/${PKG}/"
+          cp -R includes "build/${PKG}/"
+          cp rar-woo-advance-payment.php "build/${PKG}/"
+          cp readme.txt README.md CHANGELOG.md uninstall.php "build/${PKG}/"
+
+          (
+            cd build
+            zip -qr "../releases/${OUT}" "${PKG}"
+          )
+
+          unzip -t "releases/${OUT}"
+
+      - name: Commit refreshed ZIP
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          OUT="releases/RAR-Woo-Payment-Gateway-v${VERSION}.zip"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUT"
+
+          if git diff --cached --quiet; then
+            echo "Installable ZIP is already current."
+            exit 0
+          fi
+
+          git commit -m "release: build installable ZIP v${VERSION}"
+          git push
