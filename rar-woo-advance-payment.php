@@ -1,0 +1,101 @@
+<?php
+/**
+ * Plugin Name: RAR Woo Advance Payment Gateway
+ * Plugin URI: https://github.com/ruhulaminrevens/
+ * Description: Safe manual advance/full payment gateway for WooCommerce with Bangla QR, bKash, Nagad, Rocket and NPSB bank transfer, COD enforcement controls and payment verification workflow.
+ * Version: 1.0.0
+ * Author: Ruhul Amin Revens
+ * Text Domain: rar-woo-advance-payment
+ * Requires at least: 6.5
+ * Requires PHP: 8.0
+ * WC requires at least: 8.5
+ * WC tested up to: 11.1
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+define( 'RAR_WAP_VERSION', '1.0.0' );
+define( 'RAR_WAP_FILE', __FILE__ );
+define( 'RAR_WAP_DIR', plugin_dir_path( __FILE__ ) );
+define( 'RAR_WAP_URL', plugin_dir_url( __FILE__ ) );
+
+add_action( 'before_woocommerce_init', static function () {
+    if ( class_exists( '\\Automattic\\WooCommerce\\Utilities\\FeaturesUtil' ) ) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__, false );
+    }
+} );
+
+add_action( 'plugins_loaded', static function () {
+    if ( ! class_exists( 'WooCommerce' ) || ! class_exists( 'WC_Payment_Gateway' ) ) {
+        add_action( 'admin_notices', static function () {
+            if ( current_user_can( 'activate_plugins' ) ) {
+                echo '<div class="notice notice-error"><p><strong>RAR Woo Advance Payment Gateway</strong> requires WooCommerce to be active.</p></div>';
+            }
+        } );
+        return;
+    }
+
+    require_once RAR_WAP_DIR . 'includes/class-rar-wap-gateway.php';
+    require_once RAR_WAP_DIR . 'includes/class-rar-wap-admin.php';
+    require_once RAR_WAP_DIR . 'includes/class-rar-wap-display.php';
+
+    RAR_WAP_Admin::init();
+    RAR_WAP_Display::init();
+
+    add_filter( 'woocommerce_payment_gateways', static function ( $methods ) {
+        $methods[] = 'RAR_WAP_Gateway';
+        return $methods;
+    } );
+}, 20 );
+
+add_action( 'wp_enqueue_scripts', static function () {
+    if ( function_exists( 'is_checkout' ) && is_checkout() && ! is_order_received_page() ) {
+        wp_enqueue_style(
+            'rar-wap-checkout',
+            RAR_WAP_URL . 'assets/css/checkout.css',
+            array(),
+            RAR_WAP_VERSION
+        );
+        wp_enqueue_script(
+            'rar-wap-checkout',
+            RAR_WAP_URL . 'assets/js/checkout.js',
+            array( 'jquery' ),
+            RAR_WAP_VERSION,
+            true
+        );
+    }
+} );
+
+/**
+ * In required mode, hide standard COD only when this gateway is genuinely available.
+ * Safety: if configuration is incomplete, COD remains available.
+ */
+add_filter( 'woocommerce_available_payment_gateways', static function ( $gateways ) {
+    if ( is_admin() && ! wp_doing_ajax() ) {
+        return $gateways;
+    }
+
+    if ( ! isset( $gateways['rar_advance_payment'] ) ) {
+        return $gateways;
+    }
+
+    $gateway = $gateways['rar_advance_payment'];
+    if ( ! $gateway instanceof RAR_WAP_Gateway ) {
+        return $gateways;
+    }
+
+    if ( $gateway->is_safe_test_mode() && ! current_user_can( 'manage_woocommerce' ) ) {
+        return $gateways;
+    }
+
+    if ( $gateway->is_force_required() && $gateway->is_configured_for_checkout() && $gateway->get_amount_due_now() > 0 ) {
+        if ( 'yes' === $gateway->get_option( 'hide_cod_when_required', 'yes' ) ) {
+            unset( $gateways['cod'] );
+        }
+    }
+
+    return $gateways;
+}, 90 );
