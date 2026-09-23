@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.1.1 — 2026-09-23
+
+Hotfix release.
+
+### Fixed
+- Fixed false-positive duplicate Transaction ID / Reference warnings on legacy WooCommerce order storage.
+- Duplicate detection now requires an exact plugin reference + payment-channel match.
+- Added storage-safe duplicate detection for both legacy CPT orders and HPOS.
+- Unrelated WooCommerce orders no longer cause checkout to reject a valid payment reference.
+
+
 ## v1.1.0 — 2026-09-23
 
 Production UX, safety and performance release.
