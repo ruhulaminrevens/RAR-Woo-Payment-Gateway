@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.2.0 — 2026-09-23
+
+Customer-facing payment UI refinement.
+
+### Added
+- Configurable Media Library logo fields for bKash, Nagad, Rocket and Bangla QR.
+- Clean vector fallback icons when a brand logo has not been configured.
+- Click/tap-to-open full-size Bangla QR image.
+
+### Improved
+- Bangla QR checkout preview is substantially larger and scan-friendly.
+- Mobile QR sizing, spacing and payment-channel layout refined.
+- Admin QR preview enlarged and brand-logo previews added.
+
+### Changed
+- Removed single-letter B/N/R/B channel badges from checkout.
+
+
 ## v1.1.1 — 2026-09-23
 
 Hotfix release.
