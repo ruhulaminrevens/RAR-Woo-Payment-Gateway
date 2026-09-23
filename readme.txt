@@ -3,7 +3,7 @@ Contributors: ruhulaminrevens
 Tags: woocommerce, bkash, nagad, rocket, bangla qr, npsb, advance payment, cod
 Requires at least: 6.5
 Requires PHP: 8.0
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 
 Professional manual advance/full payment gateway for WooCommerce with Bangla QR, bKash, Nagad, Rocket and NPSB bank transfer.
