@@ -560,7 +560,17 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 					<label class="rar-wap-channel" data-channel="<?php echo esc_attr( $key ); ?>">
 						<span class="rar-wap-channel-head">
 							<input type="radio" name="rar_wap_channel" value="<?php echo esc_attr( $key ); ?>" <?php checked( isset( $_POST['rar_wap_channel'] ) ? wc_clean( wp_unslash( $_POST['rar_wap_channel'] ) ) : '', $key ); ?>>
-							<?php echo wp_kses_post( $this->channel_icon_html( $key, $label ) ); ?>
+							<?php
+							echo wp_kses(
+								$this->channel_icon_html( $key, $label ),
+								array(
+									'span' => array( 'class' => true, 'aria-hidden' => true ),
+									'img'  => array( 'src' => true, 'alt' => true, 'loading' => true, 'decoding' => true ),
+									'svg'  => array( 'viewBox' => true, 'focusable' => true, 'aria-hidden' => true ),
+									'path' => array( 'd' => true ),
+								)
+							);
+							?>
 							<span>
 								<strong><?php echo esc_html( $label ); ?></strong>
 								<small><?php esc_html_e( 'Tap to view payment instructions', 'rar-woo-advance-payment' ); ?></small>
