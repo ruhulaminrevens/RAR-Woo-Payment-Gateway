@@ -6,20 +6,27 @@ Designed for stores that need to collect **delivery fee, fixed advance, percenta
 
 ## Download
 
-⬇️ **[Download Latest Installable ZIP](https://raw.githubusercontent.com/ruhulaminrevens/RAR-Woo-Payment-Gateway/main/releases/RAR-Woo-Payment-Gateway-v1.1.0.zip)**
+⬇️ **[Download Latest Installable ZIP](https://raw.githubusercontent.com/ruhulaminrevens/RAR-Woo-Payment-Gateway/main/releases/RAR-Woo-Payment-Gateway-v1.1.1.zip)**
 
-Current stable version: **v1.1.0**
+Current stable version: **v1.1.1**
 
 ### Install / Update
 
 `WordPress → Plugins → Add New → Upload Plugin → choose ZIP → Install Now`
 
-If v1.0.0 is already installed, WordPress can replace it with v1.1.0. Existing gateway settings and order metadata are preserved.
+If an earlier version is already installed, WordPress can replace it with v1.1.1. Existing gateway settings and order metadata are preserved. Existing gateway settings and order metadata are preserved.
 
 After activation, use either:
 
 - `Plugins → RAR Woo Advance Payment Gateway → Settings`
 - `WooCommerce → Settings → Payments → RAR Advance Payment`
+
+## v1.1.1 hotfix
+
+- Fixed a false-positive duplicate Transaction ID / Reference warning on sites using legacy WooCommerce order storage.
+- Duplicate detection now requires an exact RAR payment-reference + channel match.
+- Supports both legacy CPT order storage and HPOS.
+- Unrelated WooCommerce orders can no longer trigger the duplicate-payment warning.
 
 ## What changed in v1.1.0
 
@@ -192,7 +199,7 @@ README.md
 CHANGELOG.md
 uninstall.php
 releases/
-  RAR-Woo-Payment-Gateway-v1.1.0.zip
+  RAR-Woo-Payment-Gateway-v1.1.1.zip
 ```
 
 ## Production notes
