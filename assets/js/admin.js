@@ -21,10 +21,10 @@
 	function syncChannel(prefix){
 		var enabled=$('#woocommerce_rar_advance_payment_'+prefix+'_enabled').is(':checked');
 		var map={
-			bkash:['bkash_number','bkash_type'],
-			nagad:['nagad_number','nagad_type'],
-			rocket:['rocket_number','rocket_type'],
-			banglaqr:['banglaqr_image','banglaqr_note'],
+			bkash:['bkash_number','bkash_type','bkash_logo'],
+			nagad:['nagad_number','nagad_type','nagad_logo'],
+			rocket:['rocket_number','rocket_type','rocket_logo'],
+			banglaqr:['banglaqr_image','banglaqr_note','banglaqr_logo'],
 			bank:['bank_details']
 		};
 		(map[prefix]||[]).forEach(function(key){
@@ -37,34 +37,37 @@
 		['bkash','nagad','rocket','banglaqr','bank'].forEach(syncChannel);
 	}
 
-	function refreshQrPreview(){
-		var $input=$('#woocommerce_rar_advance_payment_banglaqr_image');
+	function renderPreview($input,previewClass,alt){
 		if(!$input.length)return;
 		var $row=$input.closest('td');
-		$row.find('.rar-wap-qr-preview').remove();
+		$row.find('.'+previewClass).remove();
 		var url=$.trim($input.val()||'');
 		if(url){
-			$('<img>',{class:'rar-wap-qr-preview',src:url,alt:'Bangla QR preview'}).appendTo($row);
+			$('<img>',{class:previewClass,src:url,alt:alt||''}).appendTo($row);
 		}
 	}
 
-	function initMediaPicker(){
-		var $input=$('#woocommerce_rar_advance_payment_banglaqr_image');
+	function initMediaPicker(config){
+		var $input=$('#'+config.id);
 		if(!$input.length||$input.data('rar-media-ready'))return;
 		$input.data('rar-media-ready',1);
 
 		var $tools=$('<span class="rar-wap-media-tools"></span>');
-		var $choose=$('<button type="button" class="button">Choose image</button>');
+		var $choose=$('<button type="button" class="button"></button>').text(config.chooseLabel||'Choose image');
 		var $clear=$('<button type="button" class="button-link-delete">Clear</button>');
 		$tools.append($choose,$clear);
 		$input.after($tools);
+
+		function refresh(){
+			renderPreview($input,config.previewClass||'rar-wap-logo-preview',config.alt||'Preview');
+		}
 
 		$choose.on('click',function(e){
 			e.preventDefault();
 			if(!window.wp||!wp.media)return;
 			var frame=wp.media({
-				title:'Select Bangla QR image',
-				button:{text:'Use this image'},
+				title:config.title||'Select image',
+				button:{text:config.buttonLabel||'Use this image'},
 				multiple:false,
 				library:{type:'image'}
 			});
@@ -72,7 +75,7 @@
 				var attachment=frame.state().get('selection').first().toJSON();
 				if(attachment&&attachment.url){
 					$input.val(attachment.url).trigger('change');
-					refreshQrPreview();
+					refresh();
 				}
 			});
 			frame.open();
@@ -81,11 +84,22 @@
 		$clear.on('click',function(e){
 			e.preventDefault();
 			$input.val('').trigger('change');
-			refreshQrPreview();
+			refresh();
 		});
 
-		$input.on('input change',refreshQrPreview);
-		refreshQrPreview();
+		$input.on('input change',refresh);
+		refresh();
+	}
+
+	function initMediaPickers(){
+		var base='woocommerce_rar_advance_payment_';
+		[
+			{id:base+'bkash_logo',title:'Select bKash logo',alt:'bKash logo preview'},
+			{id:base+'nagad_logo',title:'Select Nagad logo',alt:'Nagad logo preview'},
+			{id:base+'rocket_logo',title:'Select Rocket logo',alt:'Rocket logo preview'},
+			{id:base+'banglaqr_logo',title:'Select Bangla QR channel logo',alt:'Bangla QR logo preview'},
+			{id:base+'banglaqr_image',title:'Select payable Bangla QR image',alt:'Bangla QR payment preview',previewClass:'rar-wap-qr-preview'}
+		].forEach(initMediaPicker);
 	}
 
 	$(document).on('change','#woocommerce_rar_advance_payment_amount_rule,#woocommerce_rar_advance_payment_enforcement',syncRules);
@@ -96,6 +110,6 @@
 
 	$(function(){
 		syncAll();
-		initMediaPicker();
+		initMediaPickers();
 	});
 })(jQuery);
