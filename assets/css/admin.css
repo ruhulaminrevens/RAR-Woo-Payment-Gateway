@@ -23,7 +23,8 @@
 .woocommerce_page_wc-settings .form-table input[type=text],.woocommerce_page_wc-settings .form-table input[type=email],.woocommerce_page_wc-settings .form-table input[type=url],.woocommerce_page_wc-settings .form-table input[type=number],.woocommerce_page_wc-settings .form-table select,.woocommerce_page_wc-settings .form-table textarea{border-radius:6px!important;border-color:#cfd9d4!important;min-height:38px}
 .woocommerce_page_wc-settings .form-table textarea{min-height:82px}
 .rar-wap-media-tools{display:inline-flex;align-items:center;gap:7px;margin-left:7px;vertical-align:middle}
-.rar-wap-qr-preview{display:block;margin-top:8px;width:110px;max-height:110px;object-fit:contain;border:1px solid #dfe7e3;border-radius:8px;padding:5px;background:#fff}
+.rar-wap-logo-preview{display:block;margin-top:8px;width:120px;height:52px;object-fit:contain;border:1px solid #dfe7e3;border-radius:8px;padding:6px;background:#fff}
+.rar-wap-qr-preview{display:block;margin-top:8px;width:180px;height:180px;object-fit:contain;border:1px solid #dfe7e3;border-radius:10px;padding:7px;background:#fff}
 .rar-wap-field-hidden{display:none!important}
 #rar-wap-payment-box .inside{margin:0;padding:12px}
 .rar-wap-admin-card{font-size:12px}
