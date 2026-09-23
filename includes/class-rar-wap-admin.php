@@ -133,8 +133,8 @@ class RAR_WAP_Admin {
 			echo '</div>';
 
 			echo '<div class="rar-wap-admin-actions">';
-			echo '<a class="button button-primary" href="' . esc_url( $verify_url ) . '" onclick="return confirm('' . esc_js( __( 'Confirm that you have verified this transfer in the official payment account?', 'rar-woo-advance-payment' ) ) . '');">' . esc_html__( 'Verify Payment', 'rar-woo-advance-payment' ) . '</a>';
-			echo '<a class="button" href="' . esc_url( $reject_url ) . '" onclick="return confirm('' . esc_js( __( 'Mark this payment reference as unverified and notify the customer?', 'rar-woo-advance-payment' ) ) . '');">' . esc_html__( 'Mark Unverified', 'rar-woo-advance-payment' ) . '</a>';
+			echo '<a class="button button-primary" href="' . esc_url( $verify_url ) . '" onclick="return confirm(&quot;' . esc_js( __( 'Confirm that you have verified this transfer in the official payment account?', 'rar-woo-advance-payment' ) ) . '&quot;);">' . esc_html__( 'Verify Payment', 'rar-woo-advance-payment' ) . '</a>';
+			echo '<a class="button" href="' . esc_url( $reject_url ) . '" onclick="return confirm(&quot;' . esc_js( __( 'Mark this payment reference as unverified and notify the customer?', 'rar-woo-advance-payment' ) ) . '&quot;);">' . esc_html__( 'Mark Unverified', 'rar-woo-advance-payment' ) . '</a>';
 			echo '</div>';
 		}
 
