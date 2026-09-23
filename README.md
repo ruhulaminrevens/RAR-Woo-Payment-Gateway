@@ -2,17 +2,44 @@
 
 Production-focused manual advance/full payment gateway for WooCommerce with **Bangla QR, bKash, Nagad, Rocket and Bank Transfer / NPSB** support.
 
-Designed for stores that need to collect **delivery fee, partial advance, percentage advance, or full payment** before order fulfilment while keeping a safe COD fallback.
+Designed for stores that need to collect **delivery fee, fixed advance, percentage advance, or full payment** before fulfilment while keeping a safe COD fallback and a clear manual-verification workflow.
 
 ## Download
 
-⬇️ **[Download Latest Installable ZIP](https://github.com/ruhulaminrevens/RAR-Woo-Payment-Gateway/raw/main/releases/RAR-Woo-Payment-Gateway-v1.0.0.zip)**
+⬇️ **[Download Latest Installable ZIP](https://raw.githubusercontent.com/ruhulaminrevens/RAR-Woo-Payment-Gateway/main/releases/RAR-Woo-Payment-Gateway-v1.1.0.zip)**
 
-Current stable version: **v1.0.0**
+Current stable version: **v1.1.0**
 
-### Install
+### Install / Update
 
-`WordPress → Plugins → Add New → Upload Plugin → choose ZIP → Install Now → Activate`
+`WordPress → Plugins → Add New → Upload Plugin → choose ZIP → Install Now`
+
+If v1.0.0 is already installed, WordPress can replace it with v1.1.0. Existing gateway settings and order metadata are preserved.
+
+After activation, use either:
+
+- `Plugins → RAR Woo Advance Payment Gateway → Settings`
+- `WooCommerce → Settings → Payments → RAR Advance Payment`
+
+## What changed in v1.1.0
+
+- Added direct **Settings** action link on the Plugins page.
+- Redesigned gateway settings into a clearer production control center.
+- Added configuration-health indicator and safe-rollout guidance.
+- Added dynamic settings: only fields relevant to the selected payment rule/channel remain visible.
+- Added Media Library picker + preview for Bangla QR.
+- Improved checkout payment cards, trust messaging, payment steps and mobile layout.
+- Added one-click **Copy** for bKash/Nagad/Rocket destination numbers.
+- Added stronger sensitive-data warnings.
+- Added duplicate Transaction ID / Reference protection per payment channel.
+- Added normalized payment-reference metadata for safer duplicate matching.
+- Added idempotent verification/unverified actions to prevent duplicate customer emails.
+- Added professional order verification panel and clearer order-list status badges.
+- Added optional WooCommerce diagnostic logging.
+- Added **async custom notification emails** through WooCommerce Action Scheduler to reduce Place Order waiting when SMTP is slow.
+- Removed redundant manual stock-reduction call; WooCommerce order-status stock handling remains authoritative.
+- Improved admin/customer notification wording and WooCommerce-styled verification emails.
+- HPOS compatibility retained.
 
 ## Payment channels
 
@@ -22,77 +49,156 @@ Current stable version: **v1.0.0**
 - Rocket
 - Bank Transfer / NPSB
 
+Only enabled channels with usable destination details are shown at checkout.
+
 ## Payment rules
 
-The store administrator can choose how much the customer must pay now:
+The administrator can choose:
+
+- **Optional** — keep normal COD/payment choices available
+- **Required** — require advance submission before order placement
+
+Pay-now amount can be:
 
 - Full shipping / delivery fee
 - Fixed advance amount
 - Percentage of order total
 - Full order total
 
-The gateway can be **optional** or **required**. When required, standard Cash on Delivery can be hidden only when this gateway is correctly configured and the required advance is greater than zero.
+When Required mode is used, normal COD can be hidden. This is fail-safe: COD is not removed unless this gateway is enabled, configured, visible to the customer and has a positive pay-now amount.
 
 ## Safe Test Mode
 
-Safe Test Mode is **ON by default**. While enabled, only Administrators and Shop Managers can see the gateway at checkout. Normal customers continue using the existing live checkout.
+Safe Test Mode is **ON by default**. While enabled, only Administrators and Shop Managers can see the gateway.
 
 Recommended rollout:
 
-1. Install and activate the plugin.
-2. Open `WooCommerce → Settings → Payments → RAR Advance Payment`.
+1. Install/update the plugin.
+2. Open the gateway **Settings**.
 3. Keep **Safe Test Mode ON**.
-4. Configure one or more payment channels.
-5. Test a low-value order as an administrator.
-6. Verify payment reference capture, order notes, admin verification controls and emails.
-7. If required, enable **Required** + **Hide standard COD**.
-8. Turn **Safe Test Mode OFF** only after successful testing.
+4. Configure at least one channel.
+5. Place a low-value test order.
+6. Check checkout UI, order metadata, admin alert and customer verification email.
+7. Verify the payment manually from the order screen.
+8. If required, enable **Required** + **Hide standard COD**.
+9. Turn **Safe Test Mode OFF** only after successful testing.
 
-## Payment verification workflow
+## Checkout experience
 
-This release uses a **manual verification model**:
+Customers see:
 
-1. Customer selects the gateway.
-2. Customer sends money externally through the configured channel.
-3. Customer submits payer/account reference and Transaction ID / Reference ID.
+- Pay now amount
+- Due on delivery amount
+- 3-step payment guide
+- Enabled payment-channel cards
+- Clear payment destination/instructions
+- One-click copy for MFS numbers
+- Payer/account reference field
+- Transaction ID / Reference field
+- Security notice: **never share PIN, password, OTP, CVV or security code**
+- Notice that submitting a Transaction ID does not mean the transfer is automatically verified
+
+## Verification workflow
+
+1. Customer chooses the gateway.
+2. Customer transfers the required amount externally.
+3. Customer submits payer/account reference + Transaction ID.
 4. Order is placed in **On hold** by default.
-5. Admin verifies the payment from the order screen.
-6. The order can move to **Processing** and the customer can be notified.
+5. Admin independently verifies the transfer in the official merchant/bank account.
+6. Admin clicks **Verify Payment**.
+7. Plugin stores verifier/time audit metadata, updates order status and notifies the customer.
+8. If the reference cannot be verified, admin can **Mark Unverified** and notify the customer.
 
-The plugin does **not** claim that a transaction is paid merely because a Transaction ID was entered. Real-time payment confirmation requires an official merchant API/webhook integration.
+Repeated Verify/Unverified actions are guarded so duplicate emails are not sent accidentally.
 
-## Safety behaviour
+## Checkout performance
 
-- Required prepayment never removes COD when the advance gateway is not usable.
-- Configuration is validated before enforcing payment restrictions.
-- Safe Test Mode prevents accidental live rollout.
-- Existing WooCommerce checkout remains the fallback during incomplete setup.
+By default, the plugin queues its **custom payment-submission emails** through WooCommerce Action Scheduler.
+
+This means slow external SMTP delivery is less likely to keep the customer waiting on the Place Order spinner. WooCommerce's normal order emails continue to be managed by WooCommerce / your SMTP plugin.
+
+You can disable async custom emails from Settings if immediate synchronous sending is preferred.
+
+## Duplicate reference protection
+
+v1.1.0 prevents the same Transaction ID / Reference from being submitted again for the same payment channel.
+
+New orders store a normalized reference value for reliable matching. The plugin also performs a backward-compatible check against v1.0.0 order metadata.
+
+## Admin tools
+
+The order screen includes a compact **Advance Payment Verification** panel showing:
+
+- Verification state
+- Channel
+- Pay-now amount
+- Due-on-delivery amount
+- Payer reference
+- Transaction ID
+- Submission time
+- Verification user/time
+- Verify Payment / Mark Unverified actions
+
+The WooCommerce Orders list also includes a compact Advance status badge.
+
+## Logging
+
+Optional diagnostic logging can be enabled from gateway Settings.
+
+Logs use WooCommerce's logger with source:
+
+`rar-woo-advance-payment`
+
+Keep logging OFF during normal operation unless troubleshooting.
+
+## Important security model
+
+This is a **manual transfer verification gateway**.
+
+It does **not** call bKash/Nagad/Rocket/bank APIs and does not claim a payment is successful merely because a customer entered a Transaction ID.
+
+True instant/cryptographic verification requires official merchant API credentials/webhooks from the relevant provider or a licensed payment aggregator.
+
+The plugin never asks customers for PIN, password, OTP, CVV or card security code.
 
 ## Compatibility
 
-- WooCommerce 11.1.x
+- WordPress 6.5+
 - PHP 8.0+
+- WooCommerce 8.5+
+- Tested target: WooCommerce 11.1.x
 - HPOS compatible
 - Classic checkout supported
-- Checkout Blocks are not declared compatible in v1.0.0
-- Designed to coexist with other WooCommerce shipping/workflow plugins
+- Checkout Blocks are **not declared compatible** in v1.1.0
+- Designed to coexist with WooCommerce shipping, order-workflow and SMTP plugins
 
 ## Repository structure
 
 ```text
 assets/
   css/
+    admin.css
+    checkout.css
   js/
+    admin.js
+    checkout.js
 includes/
+  class-rar-wap-admin.php
+  class-rar-wap-display.php
+  class-rar-wap-gateway.php
 rar-woo-advance-payment.php
 readme.txt
 README.md
 CHANGELOG.md
 uninstall.php
 releases/
-  RAR-Woo-Payment-Gateway-v1.0.0.zip
+  RAR-Woo-Payment-Gateway-v1.1.0.zip
 ```
 
-## Notes
+## Production notes
 
-This is a manual payment-submission and verification gateway. For automatic payment verification, future versions can integrate official bKash/Nagad or supported payment-processor APIs and signed webhooks.
+- Keep **On hold** as the submission status for manual verification.
+- Use an authenticated SMTP provider for reliable email delivery.
+- Keep WooCommerce New Order email enabled so store staff still receive the standard order alert.
+- Test Required + Hide COD carefully before going live.
+- Do not treat customer-entered payment references as proof of payment.

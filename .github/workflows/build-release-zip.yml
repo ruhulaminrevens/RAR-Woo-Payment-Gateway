@@ -41,6 +41,15 @@ jobs:
         shell: bash
         run: |
           node --check assets/js/checkout.js
+          node --check assets/js/admin.js
+
+      - name: Basic release consistency
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          grep -q "Stable tag: ${VERSION}" readme.txt
+          grep -q "Current stable version: \*\*v${VERSION}\*\*" README.md
+          grep -q "## v${VERSION}" CHANGELOG.md
 
       - name: Build WordPress installable ZIP
         shell: bash

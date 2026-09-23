@@ -1,1 +1,58 @@
-.rar-wap-box{display:block}.rar-wap-box{padding-top:6px}.rar-wap-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 12px}.rar-wap-summary>div{border:1px solid #e5e7eb;border-radius:9px;padding:10px 12px;background:#fff}.rar-wap-summary span{display:block;font-size:12px;color:#6b7280;margin-bottom:2px}.rar-wap-summary strong{font-size:15px}.rar-wap-help{font-size:12px;color:#4b5563;margin:8px 0 12px}.rar-wap-channels{display:grid;gap:8px;margin:0 0 12px}.rar-wap-channel{display:block;border:1px solid #e5e7eb;border-radius:9px;padding:10px 12px;background:#fff;cursor:pointer}.rar-wap-channel-head{display:flex;align-items:center;gap:8px}.rar-wap-channel-details{display:none;margin:9px 0 0 25px;font-size:13px;color:#374151}.rar-wap-channel.is-active{border-color:#0f8a6b;box-shadow:0 0 0 1px #0f8a6b}.rar-wap-channel.is-active .rar-wap-channel-details{display:block}.rar-wap-qr img{width:170px;max-width:100%;height:auto;border:1px solid #e5e7eb;border-radius:8px;padding:5px;background:#fff}.rar-wap-safety{font-size:12px;background:#f0fdf4;border-left:3px solid #0f8a6b;padding:8px 10px;margin:8px 0 0}.payment_method_rar_advance_payment .form-row{margin-bottom:10px}@media(max-width:600px){.rar-wap-summary{grid-template-columns:1fr}.rar-wap-channel{padding:9px 10px}.rar-wap-channel-details{margin-left:22px}}
+.payment_method_rar_advance_payment{--rar-wap-primary:#0f8a6b;--rar-wap-primary-dark:#0b6d55;--rar-wap-border:#e2e8e5;--rar-wap-muted:#64716b;--rar-wap-soft:#f6faf8}
+.payment_method_rar_advance_payment>label{font-weight:700!important}
+.rar-wap-intro{margin:4px 0 12px;color:#38433e;font-size:13px;line-height:1.55}
+.rar-wap-intro p{margin:0}
+.rar-wap-box{display:block;padding-top:2px}
+.rar-wap-trust-strip{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+.rar-wap-trust-strip span{display:inline-flex;align-items:center;gap:4px;padding:5px 8px;border:1px solid #dce9e4;border-radius:999px;background:#f4fbf8;color:#24634f;font-size:10px;font-weight:700;line-height:1.2}
+.rar-wap-summary{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0 12px}
+.rar-wap-summary>div{border:1px solid var(--rar-wap-border);border-radius:12px;padding:11px 12px;background:#fff;min-width:0}
+.rar-wap-summary>div.is-primary{border-color:#a8d7c6;background:linear-gradient(180deg,#f4fcf8 0%,#fff 100%)}
+.rar-wap-summary span{display:block;font-size:11px;color:var(--rar-wap-muted);margin-bottom:3px;font-weight:600}
+.rar-wap-summary strong{display:block;font-size:17px;line-height:1.25;color:#18231e}
+.rar-wap-summary .is-primary strong{color:var(--rar-wap-primary)}
+.rar-wap-summary small{display:block;margin-top:3px;color:#78837e;font-size:10px;line-height:1.25}
+.rar-wap-steps{display:grid;grid-template-columns:repeat(3,1fr);list-style:none!important;margin:12px 0!important;padding:0!important;border:1px solid var(--rar-wap-border);border-radius:11px;overflow:hidden;background:#fff}
+.rar-wap-steps li{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border-right:1px solid var(--rar-wap-border);font-size:10px;line-height:1.2;text-align:center;color:#415048}
+.rar-wap-steps li:last-child{border-right:0}
+.rar-wap-steps li span{display:grid;place-items:center;flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:#eaf6f1;color:var(--rar-wap-primary);font-weight:800;font-size:10px}
+.rar-wap-help{font-size:11px;line-height:1.5;color:#4b5751;margin:10px 0 12px}
+.rar-wap-channels{display:grid;gap:8px;margin:0 0 12px}
+.rar-wap-channel{display:block;border:1px solid var(--rar-wap-border);border-radius:12px;padding:10px 11px;background:#fff;cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
+.rar-wap-channel:hover{border-color:#bdd5cc;background:#fbfefd}
+.rar-wap-channel-head{display:flex;align-items:center;gap:9px;min-width:0}
+.rar-wap-channel-head input[type=radio]{margin:0!important;flex:0 0 auto}
+.rar-wap-channel-icon{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:9px;background:#eef7f3;color:var(--rar-wap-primary);font-size:12px;font-weight:800}
+.rar-wap-channel-head>span:last-child{min-width:0}
+.rar-wap-channel-head strong{display:block;color:#1e2a24;font-size:13px;line-height:1.25}
+.rar-wap-channel-head small{display:block;margin-top:2px;color:#7a8580;font-size:10px;line-height:1.3}
+.rar-wap-channel-details{display:none;margin:10px 0 0 47px;padding:10px;border-radius:9px;background:var(--rar-wap-soft);font-size:12px;color:#37443e}
+.rar-wap-channel.is-active{border-color:var(--rar-wap-primary);box-shadow:0 0 0 1px var(--rar-wap-primary);background:#fcfffd}
+.rar-wap-channel.is-active .rar-wap-channel-details{display:block}
+.rar-wap-destination{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rar-wap-destination small{display:block;color:#748079;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+.rar-wap-destination strong{display:block;font-size:12px;margin:2px 0 4px}
+.rar-wap-destination code{display:inline-block;background:#fff;border:1px solid #dfe8e4;border-radius:6px;padding:3px 6px;color:#17221d;font-size:12px}
+.rar-wap-copy{flex:0 0 auto;border:1px solid #c6d8d0;background:#fff;color:var(--rar-wap-primary);border-radius:7px;padding:5px 8px;font-size:10px;font-weight:700;cursor:pointer}
+.rar-wap-copy:hover,.rar-wap-copy:focus{border-color:var(--rar-wap-primary);outline:none}
+.rar-wap-copy.is-copied{background:#e7f7ef;color:#0d6b50}
+.rar-wap-qr{text-align:center}
+.rar-wap-qr img{width:190px;max-width:100%;height:auto;border:1px solid var(--rar-wap-border);border-radius:10px;padding:7px;background:#fff}
+.rar-wap-channel-note{margin:8px 0 0;font-size:11px;line-height:1.45;color:#53615a}
+.rar-wap-bank-details{white-space:normal;line-height:1.55}
+.rar-wap-reference-fields{border-top:1px solid #edf1ef;margin-top:12px;padding-top:11px}
+.payment_method_rar_advance_payment .form-row{margin-bottom:10px}
+.payment_method_rar_advance_payment .form-row label{font-size:11px!important;font-weight:650!important;margin-bottom:4px!important}
+.payment_method_rar_advance_payment input.input-text{min-height:42px!important;border-radius:9px!important;font-size:13px!important;padding:8px 11px!important}
+.rar-wap-field-note{display:block;margin-top:4px;color:#77827c;font-size:9px;line-height:1.35}
+.rar-wap-safety{font-size:10px;line-height:1.45;background:#f0fdf4;border:1px solid #d3f1df;border-left:3px solid var(--rar-wap-primary);border-radius:7px;padding:8px 9px;margin:8px 0 6px;color:#315143}
+.rar-wap-verification-note{font-size:9px;line-height:1.45;color:#707b75;margin:0}
+@media(max-width:600px){
+ .rar-wap-summary{grid-template-columns:1fr}
+ .rar-wap-steps{grid-template-columns:1fr}
+ .rar-wap-steps li{justify-content:flex-start;text-align:left;border-right:0;border-bottom:1px solid var(--rar-wap-border);padding:8px 10px}
+ .rar-wap-steps li:last-child{border-bottom:0}
+ .rar-wap-channel{padding:9px 10px}
+ .rar-wap-channel-details{margin-left:0}
+ .rar-wap-destination{align-items:flex-start}
+}
