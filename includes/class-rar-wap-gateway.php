@@ -581,56 +581,90 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 	}
 
 	private function reference_exists( $channel, $reference ) {
-		if ( ! function_exists( 'wc_get_orders' ) ) {
-			return false;
-		}
+		global $wpdb;
 
+		$channel    = sanitize_key( $channel );
+		$raw        = trim( sanitize_text_field( (string) $reference ) );
 		$normalized = $this->normalize_reference( $reference );
-		if ( '' === $normalized ) {
+
+		if ( '' === $channel || '' === $raw || '' === $normalized ) {
 			return false;
 		}
 
-		$args = array(
-			'limit'      => 1,
-			'return'     => 'ids',
-			'meta_query' => array(
-				'relation' => 'AND',
-				array(
-					'key'   => '_rar_wap_channel',
-					'value' => sanitize_key( $channel ),
-				),
-				array(
-					'key'   => '_rar_wap_reference_normalized',
-					'value' => $normalized,
-				),
-			),
-		);
-
-		$orders = wc_get_orders( $args );
-		if ( ! empty( $orders ) ) {
-			return true;
-		}
-
-		// Backward compatibility for v1.0.0 orders that did not store normalized references.
-		$legacy = wc_get_orders(
-			array(
-				'limit'      => 1,
-				'return'     => 'ids',
-				'meta_query' => array(
-					'relation' => 'AND',
-					array(
-						'key'   => '_rar_wap_channel',
-						'value' => sanitize_key( $channel ),
-					),
-					array(
-						'key'   => '_rar_wap_reference',
-						'value' => trim( sanitize_text_field( (string) $reference ) ),
-					),
-				),
+		/*
+		 * Do not rely on wc_get_orders( meta_query ) here.
+		 * Some legacy-order-storage combinations can ignore unsupported query args
+		 * and return unrelated orders, causing a false duplicate warning.
+		 *
+		 * Instead, require an exact matching RAR meta row and channel in the
+		 * underlying WooCommerce storage. This supports both legacy CPT orders
+		 * and HPOS without treating unrelated orders as duplicates.
+		 */
+		$legacy_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ref.post_id
+				FROM {$wpdb->postmeta} ref
+				INNER JOIN {$wpdb->postmeta} channel_meta
+					ON channel_meta.post_id = ref.post_id
+					AND channel_meta.meta_key = '_rar_wap_channel'
+				INNER JOIN {$wpdb->posts} orders
+					ON orders.ID = ref.post_id
+				WHERE orders.post_type = 'shop_order'
+					AND orders.post_status <> 'trash'
+					AND channel_meta.meta_value = %s
+					AND (
+						(ref.meta_key = '_rar_wap_reference_normalized' AND ref.meta_value = %s)
+						OR
+						(ref.meta_key = '_rar_wap_reference' AND ref.meta_value = %s)
+					)
+				LIMIT 1",
+				$channel,
+				$normalized,
+				$raw
 			)
 		);
 
-		return ! empty( $legacy );
+		if ( $legacy_id ) {
+			return true;
+		}
+
+		$orders_table = $wpdb->prefix . 'wc_orders';
+		$meta_table   = $wpdb->prefix . 'wc_orders_meta';
+
+		$orders_table_exists = $wpdb->get_var(
+			$wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $orders_table ) )
+		);
+		$meta_table_exists = $wpdb->get_var(
+			$wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $meta_table ) )
+		);
+
+		if ( $orders_table_exists !== $orders_table || $meta_table_exists !== $meta_table ) {
+			return false;
+		}
+
+		$hpos_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ref.order_id
+				FROM {$meta_table} ref
+				INNER JOIN {$meta_table} channel_meta
+					ON channel_meta.order_id = ref.order_id
+					AND channel_meta.meta_key = '_rar_wap_channel'
+				INNER JOIN {$orders_table} orders
+					ON orders.id = ref.order_id
+				WHERE channel_meta.meta_value = %s
+					AND (
+						(ref.meta_key = '_rar_wap_reference_normalized' AND ref.meta_value = %s)
+						OR
+						(ref.meta_key = '_rar_wap_reference' AND ref.meta_value = %s)
+					)
+				LIMIT 1",
+				$channel,
+				$normalized,
+				$raw
+			)
+		);
+
+		return (bool) $hpos_id;
 	}
 
 	public function process_payment( $order_id ) {
