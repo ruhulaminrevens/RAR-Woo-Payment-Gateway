@@ -3,7 +3,7 @@
  * Plugin Name: RAR Woo Advance Payment Gateway
  * Plugin URI: https://github.com/ruhulaminrevens/RAR-Woo-Payment-Gateway
  * Description: Production-focused manual advance/full payment gateway for WooCommerce with Bangla QR, bKash, Nagad, Rocket and NPSB bank transfer, safe COD enforcement, manual verification, and optimized notifications.
- * Version: 1.1.1
+ * Version: 1.2.0
  * Author: Ruhul Amin Revens
  * Text Domain: rar-woo-advance-payment
  * Requires at least: 6.5
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RAR_WAP_VERSION', '1.1.1' );
+define( 'RAR_WAP_VERSION', '1.2.0' );
 define( 'RAR_WAP_FILE', __FILE__ );
 define( 'RAR_WAP_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RAR_WAP_URL', plugin_dir_url( __FILE__ ) );
