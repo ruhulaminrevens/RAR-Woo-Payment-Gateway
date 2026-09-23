@@ -185,6 +185,12 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 				'type'    => 'text',
 				'default' => __( 'Send Money / Payment', 'rar-woo-advance-payment' ),
 			),
+			'bkash_logo' => array(
+				'title'       => __( 'bKash logo', 'rar-woo-advance-payment' ),
+				'type'        => 'url',
+				'default'     => '',
+				'description' => __( 'Optional. Choose an official bKash logo from the Media Library. A neutral payment icon is used when left blank.', 'rar-woo-advance-payment' ),
+			),
 
 			'nagad_enabled' => array(
 				'title'   => 'Nagad',
@@ -201,6 +207,12 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 				'title'   => __( 'Nagad instruction', 'rar-woo-advance-payment' ),
 				'type'    => 'text',
 				'default' => __( 'Send Money / Payment', 'rar-woo-advance-payment' ),
+			),
+			'nagad_logo' => array(
+				'title'       => __( 'Nagad logo', 'rar-woo-advance-payment' ),
+				'type'        => 'url',
+				'default'     => '',
+				'description' => __( 'Optional. Choose an official Nagad logo from the Media Library. A neutral payment icon is used when left blank.', 'rar-woo-advance-payment' ),
 			),
 
 			'rocket_enabled' => array(
@@ -219,6 +231,12 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 				'type'    => 'text',
 				'default' => __( 'Send Money', 'rar-woo-advance-payment' ),
 			),
+			'rocket_logo' => array(
+				'title'       => __( 'Rocket logo', 'rar-woo-advance-payment' ),
+				'type'        => 'url',
+				'default'     => '',
+				'description' => __( 'Optional. Choose an official Rocket logo from the Media Library. A neutral payment icon is used when left blank.', 'rar-woo-advance-payment' ),
+			),
 
 			'banglaqr_enabled' => array(
 				'title'   => 'Bangla QR',
@@ -236,6 +254,12 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 				'title'   => __( 'Bangla QR instruction', 'rar-woo-advance-payment' ),
 				'type'    => 'text',
 				'default' => __( 'Scan the QR with a supported banking/MFS app and pay the exact amount.', 'rar-woo-advance-payment' ),
+			),
+			'banglaqr_logo' => array(
+				'title'       => __( 'Bangla QR channel logo', 'rar-woo-advance-payment' ),
+				'type'        => 'url',
+				'default'     => '',
+				'description' => __( 'Optional brand logo shown beside the Bangla QR channel. Keep the payable merchant QR in the separate Bangla QR image field above.', 'rar-woo-advance-payment' ),
 			),
 
 			'bank_enabled' => array(
@@ -425,6 +449,30 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 		);
 	}
 
+	private function channel_icon_html( $key, $label ) {
+		$key      = sanitize_key( $key );
+		$logo_key = $key . '_logo';
+		$logo_url = esc_url( $this->get_option( $logo_key, '' ) );
+
+		if ( $logo_url ) {
+			return sprintf(
+				'<span class="rar-wap-channel-icon has-logo is-%1$s" aria-hidden="true"><img src="%2$s" alt="" loading="eager" decoding="async"></span>',
+				esc_attr( $key ),
+				$logo_url
+			);
+		}
+
+		if ( 'banglaqr' === $key ) {
+			$svg = '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M3 3h7v7H3V3zm2 2v3h3V5H5zm9-2h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5zm9-2h3v3h-3v-3zm4 0h3v7h-3v-3h-2v-2h2v-2zm-4 5h2v2h-2v-2z"/></svg>';
+		} elseif ( 'bank' === $key ) {
+			$svg = '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 3 3 7v2h18V7l-9-4zM5 11h2v7H5v-7zm4 0h2v7H9v-7zm4 0h2v7h-2v-7zm4 0h2v7h-2v-7zM3 20h18v2H3v-2z"/></svg>';
+		} else {
+			$svg = '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M4 5h13a3 3 0 0 1 3 3v1h-5a4 4 0 0 0 0 8h5v1a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3zm11 6h7v4h-7a2 2 0 1 1 0-4z"/></svg>';
+		}
+
+		return '<span class="rar-wap-channel-icon is-' . esc_attr( $key ) . '" aria-hidden="true">' . $svg . '</span>';
+	}
+
 	private function channel_details_html( $key ) {
 		switch ( $key ) {
 			case 'bkash':
@@ -457,9 +505,10 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 			case 'banglaqr':
 				$url = esc_url( $this->get_option( 'banglaqr_image', '' ) );
 				return sprintf(
-					'<div class="rar-wap-qr"><img src="%1$s" alt="%2$s" loading="lazy" decoding="async"></div><p class="rar-wap-channel-note">%3$s</p>',
+					'<div class="rar-wap-qr"><a class="rar-wap-qr-link" href="%1$s" target="_blank" rel="noopener"><img src="%1$s" alt="%2$s" loading="eager" decoding="async"></a><small class="rar-wap-qr-enlarge">%3$s</small></div><p class="rar-wap-channel-note">%4$s</p>',
 					$url,
 					esc_attr__( 'Bangla QR payment code', 'rar-woo-advance-payment' ),
+					esc_html__( 'Tap / click the QR to view full size', 'rar-woo-advance-payment' ),
 					esc_html( $this->get_option( 'banglaqr_note', '' ) )
 				);
 			case 'bank':
@@ -511,7 +560,7 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 					<label class="rar-wap-channel" data-channel="<?php echo esc_attr( $key ); ?>">
 						<span class="rar-wap-channel-head">
 							<input type="radio" name="rar_wap_channel" value="<?php echo esc_attr( $key ); ?>" <?php checked( isset( $_POST['rar_wap_channel'] ) ? wc_clean( wp_unslash( $_POST['rar_wap_channel'] ) ) : '', $key ); ?>>
-							<span class="rar-wap-channel-icon" aria-hidden="true"><?php echo esc_html( strtoupper( substr( $label, 0, 1 ) ) ); ?></span>
+							<?php echo wp_kses_post( $this->channel_icon_html( $key, $label ) ); ?>
 							<span>
 								<strong><?php echo esc_html( $label ); ?></strong>
 								<small><?php esc_html_e( 'Tap to view payment instructions', 'rar-woo-advance-payment' ); ?></small>
