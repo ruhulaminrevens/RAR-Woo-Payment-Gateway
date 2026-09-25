@@ -1,5 +1,40 @@
 # Changelog
 
+## v2.0.0 — 2026-09-26
+
+Major feature and reliability release. Backward compatible with v1.x settings, gateway ID and order metadata.
+
+### Fixed
+- E-mails now use the WooCommerce mailer/template (v1 called `WC_Emails::wrap_message()` statically, which always fell back to plain HTML).
+- Payer number and Transaction ID are no longer wiped when checkout refreshes.
+- SVG fallback icons kept their `viewBox` (was stripped by `wp_kses`).
+- Gateway now works on the order-pay page (amount calculated from the order, not the cart).
+- Duplicate-reference detection uses the authoritative order store (HPOS or legacy) and ignores cancelled/failed/trashed orders; excludes the order being paid.
+- Collect-on-delivery amount counts only a verified advance.
+- `SHOW TABLES` queries removed from the checkout path.
+
+### Added
+- Verification dashboard with KPIs, pending queue, AJAX verify/reject, filters, channel reconciliation, CSV export and menu badge.
+- Verify with actual received amount; reject with reason + customer message; undo; per-order audit trail.
+- Customer self-correction form and private payment-screenshot upload on the order page.
+- Checkout Blocks integration and Store API cart data.
+- Upay, bank account copy, bank logo, custom channel.
+- Amount rule "shipping + % of products", free-shipping fixed fallback, rounding, min/max order total, required-mode threshold.
+- Bangladesh mobile and Transaction ID validation (Bangla digits supported).
+- English / বাংলা / bilingual customer text.
+- Duplicate policy (block or flag).
+- Transaction ID and paid date set on verification.
+- Hourly automation: overdue digest, optional auto-cancel of uncorrected rejected payments.
+- Signed webhooks, REST API `rar-wap/v1`, PHP helpers and action/filter hooks.
+- Orders list: advance-status filter, bulk verify, collect amount in column.
+- Privacy exporter/eraser and privacy-policy text.
+- Multiple admin e-mail recipients; customer verified/rejected e-mail toggles; custom Place Order button text; title logos.
+
+### Changed
+- Code split into focused classes (order domain, query, e-mails, dashboard, REST, automation, proofs, privacy, blocks).
+- Uninstall also clears scheduled actions (order data and screenshots are preserved).
+
+
 ## v1.2.0 — 2026-09-23
 
 Customer-facing payment UI refinement.

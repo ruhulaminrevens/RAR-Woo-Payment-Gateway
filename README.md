@@ -1,219 +1,164 @@
 # RAR Woo Payment Gateway
 
-Production-focused manual advance/full payment gateway for WooCommerce with **Bangla QR, bKash, Nagad, Rocket and Bank Transfer / NPSB** support.
+Advance / full payment gateway for WooCommerce stores in Bangladesh — **Bangla QR, bKash, Nagad, Rocket, Upay, Bank Transfer (NPSB) and a custom channel** — with a verification dashboard, audit trail, customer self-correction, private payment-screenshot upload, Checkout Blocks support, REST API, signed webhooks and hourly automation.
 
-Designed for stores that need to collect **delivery fee, fixed advance, percentage advance, or full payment** before fulfilment while keeping a safe COD fallback and a clear manual-verification workflow.
+Collect the **delivery fee, a fixed advance, a percentage, shipping + percentage, or the full order total** before fulfilment, keep a fail-safe COD fallback, and verify every transfer against the official merchant/bank account.
 
 ## Download
 
-⬇️ **[Download Latest Installable ZIP](https://raw.githubusercontent.com/ruhulaminrevens/RAR-Woo-Payment-Gateway/main/releases/RAR-Woo-Payment-Gateway-v1.2.0.zip)**
+⬇️ **[Download Latest Installable ZIP](https://raw.githubusercontent.com/ruhulaminrevens/RAR-Woo-Payment-Gateway/main/releases/RAR-Woo-Payment-Gateway-v2.0.0.zip)**
 
-Current stable version: **v1.2.0**
+Current stable version: **v2.0.0**
 
 ### Install / Update
 
-`WordPress → Plugins → Add New → Upload Plugin → choose ZIP → Install Now`
+`WordPress → Plugins → Add New → Upload Plugin → choose ZIP → Install Now → Replace current with uploaded`
 
-If an earlier version is already installed, WordPress can replace it with v1.2.0. Existing gateway settings and order metadata are preserved. Existing gateway settings and order metadata are preserved.
+Updating from v1.x keeps the same plugin folder (`rar-woo-advance-payment`), gateway ID (`rar_advance_payment`), settings and all order metadata. **Take a full backup first** (files + database) and test a low-value order while **Safe Test Mode** is ON.
 
-After activation, use either:
+After activation:
 
-- `Plugins → RAR Woo Advance Payment Gateway → Settings`
-- `WooCommerce → Settings → Payments → RAR Advance Payment`
+- `WooCommerce → Advance Payments` — verification dashboard and queue
+- `WooCommerce → Settings → Payments → RAR Advance Payment` — gateway settings
+- `Plugins → RAR Woo Advance Payment Gateway → Settings / Dashboard`
 
-## v1.2.0 UI update
+## What's new in v2.0.0
 
-- Larger, scan-friendly Bangla QR checkout preview with full-size view.
-- Media Library logo fields for bKash, Nagad, Rocket and Bangla QR.
-- Removed single-letter channel badges; neutral vector fallbacks are used until logos are configured.
-- Improved mobile channel spacing and admin logo/QR previews.
-- For live Bangla QR payments, use the merchant/bank-issued payable QR image; a brand logo alone is not a payment QR.
+### Fixed (bugs present in v1.2.0)
+- Verification e-mails never used the WooCommerce e-mail template (`WC_Emails::wrap_message()` was called statically, so it always fell back to plain HTML). All plugin e-mails now go through the WooCommerce mailer with inline styles and your SMTP plugin.
+- Customers lost the typed payer number and Transaction ID every time checkout refreshed (address or shipping change). Values are now preserved server-side and client-side.
+- SVG channel icons lost their `viewBox` (the attribute was stripped by `wp_kses`), so fallback icons rendered at the wrong size.
+- Gateway was unavailable on the **order-pay** page (it only looked at the cart). Admin-created or phone orders can now be paid via the payment link.
+- Duplicate-reference check blocked references from **cancelled or failed** orders and, on HPOS, ignored order state. It now uses the authoritative order store and ignores cancelled, failed and trashed orders.
+- An unverified advance was treated as money received for COD. "Collect on delivery" now counts only the verified amount.
 
-## v1.1.1 hotfix
-
-- Fixed a false-positive duplicate Transaction ID / Reference warning on sites using legacy WooCommerce order storage.
-- Duplicate detection now requires an exact RAR payment-reference + channel match.
-- Supports both legacy CPT order storage and HPOS.
-- Unrelated WooCommerce orders can no longer trigger the duplicate-payment warning.
-
-## What changed in v1.1.0
-
-- Added direct **Settings** action link on the Plugins page.
-- Redesigned gateway settings into a clearer production control center.
-- Added configuration-health indicator and safe-rollout guidance.
-- Added dynamic settings: only fields relevant to the selected payment rule/channel remain visible.
-- Added Media Library picker + preview for Bangla QR.
-- Improved checkout payment cards, trust messaging, payment steps and mobile layout.
-- Added one-click **Copy** for bKash/Nagad/Rocket destination numbers.
-- Added stronger sensitive-data warnings.
-- Added duplicate Transaction ID / Reference protection per payment channel.
-- Added normalized payment-reference metadata for safer duplicate matching.
-- Added idempotent verification/unverified actions to prevent duplicate customer emails.
-- Added professional order verification panel and clearer order-list status badges.
-- Added optional WooCommerce diagnostic logging.
-- Added **async custom notification emails** through WooCommerce Action Scheduler to reduce Place Order waiting when SMTP is slow.
-- Removed redundant manual stock-reduction call; WooCommerce order-status stock handling remains authoritative.
-- Improved admin/customer notification wording and WooCommerce-styled verification emails.
-- HPOS compatibility retained.
-
-## Payment channels
-
-- Bangla QR
-- bKash
-- Nagad
-- Rocket
-- Bank Transfer / NPSB
-
-Only enabled channels with usable destination details are shown at checkout.
+### Added
+- **Verification dashboard** (WooCommerce → Advance Payments): KPI cards (awaiting, overdue, verified, submitted, rejected, verification rate), pending queue with one-click Verify/Reject, filters (period, status, channel, search by order #, TrxID or phone), channel reconciliation table and **CSV export** (UTF-8 BOM for Excel, formula-injection safe). The menu badge shows the pending count.
+- **Verify with the actual received amount** — if the customer sent a different amount, record what arrived; the balance to collect updates automatically.
+- **Reject with a reason** (not found, amount mismatch, wrong reference, duplicate, other) plus a message to the customer, and **Undo** for verify and reject.
+- **Audit trail** per order (who, when, what), shown in the order panel and the REST API.
+- **Customer self-correction**: after a rejection, customers fix their Transaction ID from the order page (guest-safe via the order key). Admin is alerted.
+- **Payment screenshot upload** (optional) from the order page — stored privately (random names, deny-all `.htaccess`, staff-only nonce-protected viewer).
+- **Checkout Blocks** support (declared compatible) with server-calculated amounts via the Store API.
+- **Upay**, a **bank account copy button**, a bank logo, and a **custom channel** (Cellfin, SureCash, etc.).
+- New amount rule **shipping + % of products**, a **free-shipping fallback** to a fixed advance, **rounding** (whole taka or next 10), **min/max order total**, and **"require only from order total X"** for Required mode.
+- **Bangladesh mobile validation** (accepts Bangla digits `০১৭…`, `+880`, 12-digit Rocket accounts) and stricter Transaction ID validation with inline hints.
+- **Bilingual customer text** — English, বাংলা, or both.
+- **Duplicate policy**: block (default) or allow and flag.
+- On verification: saves the reference as the WooCommerce **transaction ID**, and sets the **paid date** when the full total is covered.
+- **Automation (hourly, Action Scheduler)**: an overdue-verification digest e-mail to admin, and optional auto-cancel of rejected payments not corrected within N hours (WooCommerce restores stock).
+- **Signed webhooks** for every event (SMS gateway, Zapier, ERP, Google Sheets) with an HMAC-SHA256 signature and a test button.
+- **REST API** `rar-wap/v1` for the staff app and other RAR plugins.
+- A **bulk "Verify advance payment"** action and an **Advance status filter** on the WooCommerce Orders list (HPOS and legacy).
+- **Privacy**: personal-data exporter/eraser (erasure respects WooCommerce's order-data retention setting) and privacy-policy text.
+- Multiple admin notification recipients (comma-separated).
 
 ## Payment rules
 
-The administrator can choose:
+| Rule | Pay now |
+|---|---|
+| Shipping fee | shipping + shipping tax (optional fixed fallback when shipping is free) |
+| Fixed | fixed amount (capped at the order total) |
+| Percentage | % of order total |
+| Shipping + % | shipping + % of (total − shipping) |
+| Full | order total |
 
-- **Optional** — keep normal COD/payment choices available
-- **Required** — require advance submission before order placement
-
-Pay-now amount can be:
-
-- Full shipping / delivery fee
-- Fixed advance amount
-- Percentage of order total
-- Full order total
-
-When Required mode is used, normal COD can be hidden. This is fail-safe: COD is not removed unless this gateway is enabled, configured, visible to the customer and has a positive pay-now amount.
-
-## Safe Test Mode
-
-Safe Test Mode is **ON by default**. While enabled, only Administrators and Shop Managers can see the gateway.
-
-Recommended rollout:
-
-1. Install/update the plugin.
-2. Open the gateway **Settings**.
-3. Keep **Safe Test Mode ON**.
-4. Configure at least one channel.
-5. Place a low-value test order.
-6. Check checkout UI, order metadata, admin alert and customer verification email.
-7. Verify the payment manually from the order screen.
-8. If required, enable **Required** + **Hide standard COD**.
-9. Turn **Safe Test Mode OFF** only after successful testing.
-
-## Checkout experience
-
-Customers see:
-
-- Pay now amount
-- Due on delivery amount
-- 3-step payment guide
-- Enabled payment-channel cards
-- Clear payment destination/instructions
-- One-click copy for MFS numbers
-- Payer/account reference field
-- Transaction ID / Reference field
-- Security notice: **never share PIN, password, OTP, CVV or security code**
-- Notice that submitting a Transaction ID does not mean the transfer is automatically verified
+Optional rounding: whole amount, or next 10. **Required** mode hides standard COD only when this gateway is enabled, visible to the customer, configured, and the pay-now amount is above zero (fail-safe).
 
 ## Verification workflow
 
-1. Customer chooses the gateway.
-2. Customer transfers the required amount externally.
-3. Customer submits payer/account reference + Transaction ID.
-4. Order is placed in **On hold** by default.
-5. Admin independently verifies the transfer in the official merchant/bank account.
-6. Admin clicks **Verify Payment**.
-7. Plugin stores verifier/time audit metadata, updates order status and notifies the customer.
-8. If the reference cannot be verified, admin can **Mark Unverified** and notify the customer.
+1. The customer selects a channel, pays the exact amount, and submits the paying number and Transaction ID.
+2. The order goes **On hold** (default). Admin gets an e-mail with an "Open order" button.
+3. Staff check the transfer in the official merchant or bank account.
+4. **Verify** (optionally with the actual received amount) → the order moves to Processing (configurable), the customer is e-mailed, and the transaction ID is saved.
+5. Or **Mark unverified** with a reason → the customer is e-mailed a correction link; they can fix the reference and/or upload a screenshot, which puts it back in the queue.
+6. Hourly checks remind admin about payments waiting longer than the configured hours.
 
-Repeated Verify/Unverified actions are guarded so duplicate emails are not sent accidentally.
+## Integration for other plugins
 
-## Checkout performance
+**Order meta (stable, v1-compatible)**
 
-By default, the plugin queues its **custom payment-submission emails** through WooCommerce Action Scheduler.
+| Key | Meaning |
+|---|---|
+| `_rar_wap_status` | `submitted`, `verified`, `unverified` |
+| `_rar_wap_required_amount` | advance amount (after verification = verified amount) |
+| `_rar_wap_requested_amount` | amount the customer was asked to pay (v2) |
+| `_rar_wap_received_amount` | amount staff confirmed (v2) |
+| `_rar_wap_balance_due` | balance after the advance |
+| `_rar_wap_channel`, `_rar_wap_channel_label`, `_rar_wap_payer`, `_rar_wap_reference` | submission details |
 
-This means slow external SMTP delivery is less likely to keep the customer waiting on the Place Order spinner. WooCommerce's normal order emails continue to be managed by WooCommerce / your SMTP plugin.
+**PHP helpers**
 
-You can disable async custom emails from Settings if immediate synchronous sending is preferred.
+```php
+rar_wap_get_collectable_amount( $order ); // amount the rider should collect
+rar_wap_get_payment( $order );            // full snapshot array or null
+```
 
-## Duplicate reference protection
+**Actions / filters**
 
-v1.1.0 prevents the same Transaction ID / Reference from being submitted again for the same payment channel.
+```php
+do_action( 'rar_wap_payment_event', $event, $order, $context ); // submitted|verified|rejected|reset|resubmitted|proof_uploaded|auto_cancelled
+do_action( 'rar_wap_payment_verified', $order, $context );      // and rar_wap_payment_{event}
+apply_filters( 'rar_wap_amount_due', $amount, $total, $shipping, $rule, $gateway );
+apply_filters( 'rar_wap_collectable_amount', $amount, $order );
+apply_filters( 'rar_wap_channels', $channels, $gateway );
+```
 
-New orders store a normalized reference value for reliable matching. The plugin also performs a backward-compatible check against v1.0.0 order metadata.
+**REST API** (`/wp-json/rar-wap/v1`, requires order-management permission — cookie + nonce or an Application Password)
 
-## Admin tools
+| Method | Endpoint | Notes |
+|---|---|---|
+| GET | `/summary?from=YYYY-MM-DD&to=YYYY-MM-DD` | totals by status and channel |
+| GET | `/payments?status=submitted&channel=&search=&page=&per_page=` | snapshots; `X-WP-Total` header |
+| GET | `/payments/{order_id}` | snapshot + audit trail |
+| POST | `/payments/{order_id}/verify` | `amount`, `note`, `notify` |
+| POST | `/payments/{order_id}/reject` | `reason`, `note`, `notify` |
+| POST | `/payments/{order_id}/reset` | `note` |
 
-The order screen includes a compact **Advance Payment Verification** panel showing:
+**Webhook** — JSON POST `{event, delivery_id, occurred_at, site, payment}` with headers `X-RAR-WAP-Event`, `X-RAR-WAP-Delivery` and `X-RAR-WAP-Signature: sha256=<HMAC of body with your secret>`. Deliveries run through Action Scheduler; failures appear under `Tools → Scheduled Actions` (group `rar-wap`).
 
-- Verification state
-- Channel
-- Pay-now amount
-- Due-on-delivery amount
-- Payer reference
-- Transaction ID
-- Submission time
-- Verification user/time
-- Verify Payment / Mark Unverified actions
+## Security model
 
-The WooCommerce Orders list also includes a compact Advance status badge.
-
-## Logging
-
-Optional diagnostic logging can be enabled from gateway Settings.
-
-Logs use WooCommerce's logger with source:
-
-`rar-woo-advance-payment`
-
-Keep logging OFF during normal operation unless troubleshooting.
-
-## Important security model
-
-This is a **manual transfer verification gateway**.
-
-It does **not** call bKash/Nagad/Rocket/bank APIs and does not claim a payment is successful merely because a customer entered a Transaction ID.
-
-True instant/cryptographic verification requires official merchant API credentials/webhooks from the relevant provider or a licensed payment aggregator.
-
-The plugin never asks customers for PIN, password, OTP, CVV or card security code.
+This is a **manual transfer verification gateway**. It does not call bKash/Nagad/Rocket/bank APIs and never treats a submitted Transaction ID as proof of payment. It never asks for a PIN, password, OTP, CVV or card security code (and blocks those words in the fields). Payment screenshots are never publicly accessible. True instant verification requires official merchant API credentials/webhooks from the provider or a licensed aggregator.
 
 ## Compatibility
 
-- WordPress 6.5+
-- PHP 8.0+
-- WooCommerce 8.5+
-- Tested target: WooCommerce 11.1.x
-- HPOS compatible
-- Classic checkout supported
-- Checkout Blocks are **not declared compatible** in v1.1.0
-- Designed to coexist with WooCommerce shipping, order-workflow and SMTP plugins
+- WordPress 6.5+, PHP 8.0+, WooCommerce 8.5+ (target 11.1.x)
+- HPOS and legacy order storage
+- Classic checkout **and** Checkout Blocks
+- Works on shared hosting (Hostinger/LiteSpeed) — no Node.js or build step needed
+- Coexists with RAR Woo Order Workflow & Notify, RAR Woo Smart Courier, RAR Woo Cart & Checkout and SMTP plugins
 
 ## Repository structure
 
 ```text
 assets/
-  css/
-    admin.css
-    checkout.css
-  js/
-    admin.js
-    checkout.js
+  css/admin.css, checkout.css
+  js/admin.js (settings), admin-orders.js (order panel + dashboard), checkout.js (classic), blocks.js (Checkout Blocks)
 includes/
-  class-rar-wap-admin.php
-  class-rar-wap-display.php
-  class-rar-wap-gateway.php
+  class-rar-wap-plugin.php         bootstrap, assets, COD enforcement, helpers
+  class-rar-wap-gateway.php        gateway settings, checkout UI, validation, processing
+  class-rar-wap-order.php          state machine, meta, audit trail, events
+  class-rar-wap-query.php          HPOS/legacy-aware SQL (queue, summaries, duplicates)
+  class-rar-wap-admin.php          order panel (AJAX), list column/filter, bulk verify
+  class-rar-wap-dashboard.php      KPI dashboard, queue, reconciliation, CSV, tools
+  class-rar-wap-display.php        customer order card, correction form, totals, e-mail summary
+  class-rar-wap-proofs.php         private screenshot storage
+  class-rar-wap-emails.php         WooCommerce-templated e-mails
+  class-rar-wap-automation.php     hourly checks, webhooks
+  class-rar-wap-rest.php           REST API
+  class-rar-wap-privacy.php        exporter / eraser / policy text
+  class-rar-wap-blocks*.php        Checkout Blocks + Store API data
+  class-rar-wap-i18n.php           English / বাংলা customer strings
 rar-woo-advance-payment.php
-readme.txt
-README.md
-CHANGELOG.md
 uninstall.php
 releases/
-  RAR-Woo-Payment-Gateway-v1.2.0.zip
 ```
 
-## Production notes
+## Uninstall
 
-- Keep **On hold** as the submission status for manual verification.
-- Use an authenticated SMTP provider for reliable email delivery.
-- Keep WooCommerce New Order email enabled so store staff still receive the standard order alert.
-- Test Required + Hide COD carefully before going live.
-- Do not treat customer-entered payment references as proof of payment.
+Deleting the plugin removes its settings and scheduled jobs only. Order payment metadata, the audit trail and stored payment screenshots (`wp-content/uploads/rar-wap-proofs/`) are kept for accounting.
+
+## License
+
+GPLv2 or later.
