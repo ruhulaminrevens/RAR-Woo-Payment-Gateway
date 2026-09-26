@@ -1,5 +1,5 @@
 /**
- * RAR Advance Payment — WooCommerce Checkout Blocks integration.
+ * RAR Advance Payment — WooCommerce Checkout Blocks integration (v2.1).
  * Plain ES5 + wp.element (no build step needed on shared hosting).
  */
 ( function () {
@@ -16,11 +16,32 @@
 	var useEffect = window.wp.element.useEffect;
 	var decode = ( window.wp.htmlEntities && window.wp.htmlEntities.decodeEntities ) || function ( s ) { return s; };
 	var S = settings.strings || {};
+	var BN = S._bn || {};
 	var channels = settings.channels || [];
+	var tints = settings.tints || {};
 	var title = decode( settings.title || 'Advance Payment' );
+	var ICONS = {
+		mfs: 'M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 3v13h10V5H7zm5 14.2a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z',
+		qr: 'M3 3h7v7H3V3zm2 2v3h3V5H5zm9-2h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5zm9-2h3v3h-3v-3zm4 0h3v7h-3v-3h-2v-2h2v-2zm-4 5h2v2h-2v-2z',
+		bank: 'M12 3 3 7v2h18V7l-9-4zM5 11h2v7H5v-7zm4 0h2v7H9v-7zm4 0h2v7h-2v-7zm4 0h2v7h-2v-7zM3 20h18v2H3v-2z',
+		copy: 'M8 3h9a2 2 0 0 1 2 2v11h-2V5H8V3zM5 7h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm0 2v10h9V9H5z',
+		shield: 'M12 2 4 5v6c0 5 3.4 9.6 8 11 4.6-1.4 8-6 8-11V5l-8-3zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.8-4.8 1.4 1.4-6.2 6.2z',
+	};
 
 	function t( key ) {
 		return S[ key ] || key;
+	}
+
+	function fmt( key, value ) {
+		return t( key ).replace( '%s', value );
+	}
+
+	function dual( key ) {
+		return BN[ key ] ? [ t( key ), el( 'span', { className: 'rw-bn', lang: 'bn', key: 'bn' }, BN[ key ] ) ] : t( key );
+	}
+
+	function svg( name ) {
+		return el( 'svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true', focusable: 'false' }, el( 'path', { d: ICONS[ name ] || ICONS.mfs } ) );
 	}
 
 	function bnDigits( value ) {
@@ -65,8 +86,9 @@
 		document.body.appendChild( input );
 		input.select();
 		try {
-			document.execCommand( 'copy' );
-			done();
+			if ( document.execCommand( 'copy' ) ) {
+				done();
+			}
 		} catch ( e ) {}
 		document.body.removeChild( input );
 	}
@@ -77,65 +99,63 @@
 			'button',
 			{
 				type: 'button',
-				className: 'rar-wap-copy' + ( state[ 0 ] ? ' is-copied' : '' ),
+				className: 'rw-copy' + ( state[ 0 ] ? ' is-done' : '' ),
+				'aria-label': props.label || t( 'copy' ),
 				onClick: function ( e ) {
 					e.preventDefault();
 					e.stopPropagation();
 					copyText( props.value, function () {
 						state[ 1 ]( true );
-						window.setTimeout( function () { state[ 1 ]( false ); }, 1400 );
+						window.setTimeout( function () { state[ 1 ]( false ); }, 1500 );
 					} );
 				},
 			},
-			state[ 0 ] ? t( 'copied' ) : t( 'copy' )
+			svg( 'copy' ),
+			el( 'span', null, state[ 0 ] ? t( 'copied' ) : t( 'copy' ) )
 		);
 	}
 
-	function ChannelIcon( props ) {
+	function Icon( props ) {
 		var c = props.channel;
 		if ( c.logo ) {
-			return el( 'span', { className: 'rar-wap-channel-icon has-logo is-' + c.key, 'aria-hidden': 'true' }, el( 'img', { src: c.logo, alt: '' } ) );
+			return el( 'span', { className: 'rw-ico has-logo', 'aria-hidden': 'true' }, el( 'img', { src: c.logo, alt: '' } ) );
 		}
-		return el( 'span', { className: 'rar-wap-channel-icon is-' + c.key, 'aria-hidden': 'true' }, c.type === 'qr' ? '▦' : ( c.type === 'bank' ? '🏦' : '💳' ) );
+		return el( 'span', { className: 'rw-ico', style: { '--rw-tint': tints[ c.key ] || tints.custom }, 'aria-hidden': 'true' }, svg( c.type ) );
 	}
 
-	function ChannelDetails( props ) {
+	function Row( label, value, copyValue, mono ) {
+		return el( 'div', { className: 'rw-row', key: label },
+			el( 'div', null, el( 'small', null, label ), el( 'strong', { className: mono ? 'rw-mono' : '' }, value ) ),
+			copyValue ? el( CopyButton, { value: copyValue } ) : null
+		);
+	}
+
+	function Panel( props ) {
 		var c = props.channel;
 		var parts = [];
 		if ( c.type === 'qr' ) {
-			parts.push(
-				el( 'span', { className: 'rar-wap-qr', key: 'qr' },
-					el( 'a', { className: 'rar-wap-qr-link', href: c.qr, target: '_blank', rel: 'noopener' }, el( 'img', { src: c.qr, alt: 'Bangla QR' } ) ),
-					el( 'small', { className: 'rar-wap-qr-enlarge' }, t( 'qr_enlarge' ) )
-				)
-			);
-			if ( c.instruction ) {
-				parts.push( el( 'span', { className: 'rar-wap-channel-note', key: 'note' }, c.instruction ) );
-			}
-			return parts;
+			parts.push( el( 'div', { className: 'rw-qr', key: 'qr' },
+				el( 'a', { href: c.qr, target: '_blank', rel: 'noopener' }, el( 'img', { src: c.qr, alt: 'Bangla QR' } ) ),
+				el( 'p', null, c.instruction || t( 'scan_qr' ) ),
+				el( 'a', { className: 'rw-link', href: c.qr, target: '_blank', rel: 'noopener' }, t( 'open_qr' ) + ' ↗' )
+			) );
+		} else if ( c.number ) {
+			var label = c.type === 'mfs' ? t( 'send_to' ) + ( c.instruction ? ' · ' + c.instruction : '' ) : t( 'account_no' );
+			parts.push( Row( label, c.number, c.number.replace( /[^0-9A-Za-z]/g, '' ), true ) );
 		}
-		if ( c.number ) {
-			parts.push(
-				el( 'span', { className: 'rar-wap-destination', key: 'dest' },
-					el( 'span', null,
-						el( 'small', null, c.type === 'mfs' ? t( 'instruction' ) : t( 'account_type' ) ),
-						el( 'strong', null, c.instruction || c.label ),
-						el( 'code', null, c.number )
-					),
-					el( CopyButton, { value: c.number } )
-				)
-			);
+		if ( props.amounts ) {
+			parts.push( Row( t( 'amount' ), props.amounts.amount_due_text, props.amounts.amount_due, false ) );
 		}
 		if ( c.details ) {
-			parts.push(
-				el( 'span', { className: 'rar-wap-bank-details', key: 'details' },
-					c.details.split( /\n/ ).map( function ( line, i ) {
-						return el( 'span', { key: i, style: { display: 'block' } }, line );
-					} )
-				)
-			);
+			parts.push( el( 'div', { className: 'rw-details', key: 'd' }, c.details.split( /\n/ ).map( function ( line, i ) {
+				return el( 'div', { key: i }, line );
+			} ) ) );
 		}
-		return parts;
+		return el( 'div', { className: 'rw-panel' }, parts );
+	}
+
+	function Step( n, key ) {
+		return el( 'div', { className: 'rw-step' }, el( 'i', null, n ), el( 'span', null, dual( key ) ) );
 	}
 
 	function Content( props ) {
@@ -143,9 +163,11 @@
 		var chState = useState( channels.length === 1 ? channels[ 0 ].key : '' );
 		var payerState = useState( '' );
 		var refState = useState( '' );
+		var errState = useState( {} );
 		var channel = chState[ 0 ];
 		var payer = payerState[ 0 ];
 		var reference = refState[ 0 ];
+		var errors = errState[ 0 ];
 		var eventRegistration = props.eventRegistration || {};
 		var emitResponse = props.emitResponse || {};
 		var onSetup = eventRegistration.onPaymentSetup || eventRegistration.onPaymentProcessing;
@@ -157,6 +179,7 @@
 				selected = c;
 			}
 		} );
+		var isMfs = selected && selected.type === 'mfs';
 
 		useEffect( function () {
 			if ( ! onSetup ) {
@@ -166,100 +189,81 @@
 				if ( ! selected ) {
 					return { type: types.ERROR, message: t( 'err_channel' ) };
 				}
-				var cleanPayer = bnDigits( payer ).trim();
 				if ( /\b(otp|pin|password|passcode|cvv|cvc)\b/i.test( payer + ' ' + reference ) ) {
 					return { type: types.ERROR, message: t( 'err_sensitive' ) };
 				}
-				if ( selected.type === 'mfs' && settings.validateMfs ) {
+				var cleanPayer = bnDigits( payer ).trim();
+				if ( isMfs && settings.validateMfs ) {
 					cleanPayer = normalizeMobile( payer );
 					if ( ! cleanPayer ) {
+						errState[ 1 ]( { payer: t( 'err_mobile' ) } );
 						return { type: types.ERROR, message: t( 'err_mobile' ) };
 					}
 				} else if ( cleanPayer.length < 4 ) {
+					errState[ 1 ]( { payer: t( 'err_payer' ) } );
 					return { type: types.ERROR, message: t( 'err_payer' ) };
 				}
 				var ref = normalizeRef( reference );
 				if ( ! /^[A-Z0-9][A-Z0-9\-_\/.#]{3,39}$/.test( ref ) ) {
+					errState[ 1 ]( { reference: t( 'err_trx' ) } );
 					return { type: types.ERROR, message: t( 'err_trx' ) };
 				}
 				return {
 					type: types.SUCCESS,
-					meta: {
-						paymentMethodData: {
-							rar_wap_channel: selected.key,
-							rar_wap_payer: cleanPayer,
-							rar_wap_reference: ref,
-						},
-					},
+					meta: { paymentMethodData: { rar_wap_channel: selected.key, rar_wap_payer: cleanPayer, rar_wap_reference: ref } },
 				};
 			} );
 		}, [ onSetup, channel, payer, reference ] );
 
-		var isMfs = selected && selected.type === 'mfs';
-		var isBank = selected && selected.type === 'bank';
+		function field( id, label, value, setter, extra, hint ) {
+			var err = errors[ id ];
+			return el( 'p', { className: 'rw-field' + ( err ? ' is-bad' : '' ) },
+				el( 'label', { htmlFor: 'rw_' + id }, label ),
+				el( 'input', Object.assign( {
+					id: 'rw_' + id, type: 'text', autoComplete: 'off', value: value,
+					onChange: function ( e ) { setter( e.target.value ); errState[ 1 ]( {} ); },
+				}, extra ) ),
+				hint ? el( 'small', null, hint ) : null,
+				err ? el( 'span', { className: 'rw-err', role: 'alert' }, err ) : null
+			);
+		}
 
-		return el( 'div', { className: 'rar-wap-box rar-wap-blocks' },
-			settings.description ? el( 'div', { className: 'rar-wap-intro' }, decode( settings.description ) ) : null,
-			el( 'div', { className: 'rar-wap-trust-strip', role: 'note' },
-				el( 'span', null, '✓ ' + t( 'trust_manual' ) ),
-				el( 'span', null, '🔒 ' + t( 'trust_nopin' ) ),
-				el( 'span', null, '✓ ' + t( 'trust_linked' ) )
-			),
-			amounts ? el( 'div', { className: 'rar-wap-summary' },
-				el( 'div', { className: 'is-primary' },
-					el( 'span', null, t( 'pay_now' ) ),
-					el( 'strong', null, amounts.amount_due_text ),
-					el( 'small', null, t( 'transfer_exact' ) )
-				),
-				el( 'div', null,
-					el( 'span', null, t( 'due_on_delivery' ) ),
-					el( 'strong', null, amounts.balance_due_text ),
-					el( 'small', null, parseFloat( amounts.balance_due ) > 0 ? t( 'remaining_balance' ) : t( 'fully_paid_now' ) )
-				)
+		var balance = amounts ? parseFloat( amounts.balance_due ) : 0;
+
+		return el( 'div', { className: 'rar-wap', style: { '--rw-accent': settings.accent || '#0f8a6b' } },
+			amounts ? el( 'div', { className: 'rw-amount' },
+				el( 'div', { className: 'rw-amount-now' }, el( 'span', null, t( 'pay_now' ) ), el( 'strong', null, amounts.amount_due_text ) ),
+				el( 'div', { className: 'rw-amount-rest' }, balance > 0
+					? [ el( 'span', { key: 'a' }, t( 'on_delivery' ) ), el( 'strong', { key: 'b' }, amounts.balance_due_text ) ]
+					: el( 'span', null, t( 'nothing_on_delivery' ) ) )
 			) : null,
-			el( 'ol', { className: 'rar-wap-steps' },
-				el( 'li', null, el( 'span', null, '1' ), el( 'strong', null, t( 'step_channel' ) ) ),
-				el( 'li', null, el( 'span', null, '2' ), el( 'strong', null, t( 'step_pay' ) ) ),
-				el( 'li', null, el( 'span', null, '3' ), el( 'strong', null, t( 'step_submit' ) ) )
-			),
-			el( 'p', { className: 'rar-wap-help' }, t( 'help' ) ),
-			el( 'div', { className: 'rar-wap-channels', role: 'radiogroup' },
+			Step( 1, 'step_choose' ),
+			el( 'div', { className: 'rw-tiles rw-n' + Math.min( 3, channels.length ) + ( channels.length % 2 ? ' rw-odd' : '' ), role: 'radiogroup' },
 				channels.map( function ( c ) {
-					var active = c.key === channel;
-					return el( 'label', { key: c.key, className: 'rar-wap-channel' + ( active ? ' is-active' : '' ), 'data-channel': c.key },
-						el( 'span', { className: 'rar-wap-channel-head' },
-							el( 'input', { type: 'radio', name: 'rar_wap_channel_block', value: c.key, checked: active, onChange: function () { chState[ 1 ]( c.key ); } } ),
-							el( ChannelIcon, { channel: c } ),
-							el( 'span', null, el( 'strong', null, c.label ), el( 'small', null, t( 'tap_view' ) ) )
-						),
-						active ? el( 'span', { className: 'rar-wap-channel-details', style: { display: 'block' } }, el( ChannelDetails, { channel: c } ) ) : null
+					var on = c.key === channel;
+					return el( 'label', { key: c.key, className: 'rw-tile' + ( on ? ' is-on' : '' ) },
+						el( 'input', { type: 'radio', name: 'rar_wap_channel_block', value: c.key, checked: on, onChange: function () { chState[ 1 ]( c.key ); errState[ 1 ]( {} ); } } ),
+						el( Icon, { channel: c } ),
+						el( 'span', { className: 'rw-tile-name' }, c.label ),
+						el( 'span', { className: 'rw-check', 'aria-hidden': 'true' } )
 					);
 				} )
 			),
-			el( 'div', { className: 'rar-wap-reference-fields' },
-				el( 'p', { className: 'form-row form-row-wide' },
-					el( 'label', { htmlFor: 'rar_wap_payer_b' }, t( 'payer_label' ), ' *' ),
-					el( 'input', {
-						id: 'rar_wap_payer_b', className: 'input-text', type: 'text', inputMode: 'tel', autoComplete: 'off', maxLength: 80,
-						placeholder: isMfs ? t( 'ph_mobile' ) : ( isBank ? t( 'ph_account' ) : t( 'ph_generic_payer' ) ),
-						value: payer,
-						onChange: function ( e ) { payerState[ 1 ]( e.target.value ); },
-					} )
-				),
-				el( 'p', { className: 'form-row form-row-wide' },
-					el( 'label', { htmlFor: 'rar_wap_reference_b' }, t( 'trx_label' ), ' *' ),
-					el( 'input', {
-						id: 'rar_wap_reference_b', className: 'input-text', type: 'text', autoComplete: 'off', spellCheck: false, maxLength: 60,
-						placeholder: isBank ? t( 'ph_bank_trx' ) : t( 'ph_trx' ),
-						value: reference,
-						onChange: function ( e ) { refState[ 1 ]( e.target.value ); },
-						onBlur: function () { refState[ 1 ]( normalizeRef( reference ) ); },
-					} ),
-					el( 'small', { className: 'rar-wap-field-note' }, t( 'trx_note' ) )
-				)
+			Step( 2, 'step_send' ),
+			selected ? el( Panel, { channel: selected, amounts: amounts } ) : el( 'p', { className: 'rw-hint' }, t( 'pick_first' ) ),
+			Step( 3, 'step_confirm' ),
+			el( 'div', { className: 'rw-fields' },
+				field( 'payer', isMfs ? fmt( 'payer_label', selected.label ) : t( 'payer_label_generic' ), payer, payerState[ 1 ], {
+					inputMode: isMfs ? 'tel' : 'text', maxLength: 80,
+					placeholder: isMfs ? t( 'ph_mobile' ) : t( 'ph_account' ),
+				} ),
+				field( 'reference', t( 'trx_label' ), reference, refState[ 1 ], {
+					className: 'rw-trx', spellCheck: false, maxLength: 60,
+					placeholder: selected && selected.type === 'bank' ? t( 'ph_bank_trx' ) : t( 'ph_trx' ),
+					onBlur: function () { refState[ 1 ]( normalizeRef( reference ) ); },
+				}, t( 'trx_hint' ) )
 			),
-			el( 'p', { className: 'rar-wap-safety' }, el( 'strong', null, '🔒 ' + t( 'security_title' ) ), ' ', t( 'security' ) ),
-			el( 'p', { className: 'rar-wap-verification-note' }, t( 'verification_note' ) )
+			el( 'p', { className: 'rw-secure' }, svg( 'shield' ), el( 'span', null, dual( 'secure' ) ) )
 		);
 	}
 
@@ -275,7 +279,7 @@
 	}
 
 	function Edit() {
-		return el( 'div', { className: 'rar-wap-box' }, el( 'p', null, title + ' — ' + t( 'help' ) ) );
+		return el( 'div', { className: 'rar-wap' }, el( 'p', { className: 'rw-hint' }, title ) );
 	}
 
 	var config = {

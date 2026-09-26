@@ -4,7 +4,7 @@ Tags: woocommerce, bkash, nagad, rocket, bangla qr, npsb, upay, advance payment,
 Requires at least: 6.5
 Requires PHP: 8.0
 Tested up to: 6.8
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 WC requires at least: 8.5
 WC tested up to: 11.1
 License: GPLv2 or later
@@ -34,5 +34,8 @@ This is a manual transfer verification gateway. It does not call bKash/Nagad/Roc
 Never collect PIN, password, OTP, CVV or card security codes.
 
 == Changelog ==
+= 2.1.0 =
+Complete UI redesign: mobile-first 3-step checkout (method tiles, one "send the money" card with copy buttons, two fields), redesigned customer order page with progress tracker, live admin dashboard (trend chart, channel mix, team speed, activity feed, modal verify/reject, auto-refresh), tabbed settings with channel cards, setup checklist and live amount preview. Adds accent colour, WhatsApp/call shortcuts, guest-safe correction links. See CHANGELOG.md.
+
 = 2.0.0 =
 Major upgrade: verification dashboard, Checkout Blocks, REST API, webhooks, automation, customer correction and screenshot upload, Upay/custom channels, new amount rules, bilingual text, and multiple bug fixes. See CHANGELOG.md.

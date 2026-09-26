@@ -152,16 +152,9 @@ class RAR_WAP_Plugin {
 	}
 
 	public static function checkout_js_strings() {
-		return array(
-			'copied'       => RAR_WAP_I18n::t( 'copied' ),
-			'phMobile'     => RAR_WAP_I18n::t( 'ph_mobile' ),
-			'phAccount'    => RAR_WAP_I18n::t( 'ph_account' ),
-			'phGeneric'    => RAR_WAP_I18n::t( 'ph_generic_payer' ),
-			'phTrx'        => RAR_WAP_I18n::t( 'ph_trx' ),
-			'phBankTrx'    => RAR_WAP_I18n::t( 'ph_bank_trx' ),
-			'errMobile'    => RAR_WAP_I18n::t( 'err_mobile' ),
-			'errTrx'       => RAR_WAP_I18n::t( 'err_trx' ),
-			'validateMfs'  => 'no' !== ( self::settings()['validate_mobile'] ?? 'yes' ),
+		return array_merge(
+			RAR_WAP_I18n::js_strings(),
+			array( 'validateMfs' => 'no' !== ( self::settings()['validate_mobile'] ?? 'yes' ) )
 		);
 	}
 
@@ -182,10 +175,40 @@ class RAR_WAP_Plugin {
 		}
 
 		wp_enqueue_style( 'rar-wap-admin', RAR_WAP_URL . 'assets/css/admin.css', array(), RAR_WAP_VERSION );
+		$accent = RAR_WAP_Gateway::accent_color();
+		wp_add_inline_style( 'rar-wap-admin', '.rwa,.rws,#rar-wap-payment-box{--rwa-accent:' . $accent . '}' );
 
 		if ( $is_payment_page ) {
 			wp_enqueue_media();
 			wp_enqueue_script( 'rar-wap-admin', RAR_WAP_URL . 'assets/js/admin.js', array( 'jquery' ), RAR_WAP_VERSION, true );
+			wp_localize_script(
+				'rar-wap-admin',
+				'rarWapSettings',
+				array(
+					'currency' => html_entity_decode( get_woocommerce_currency_symbol(), ENT_QUOTES, 'UTF-8' ),
+					'tints'    => RAR_WAP_Gateway::TINTS,
+					'i18n'     => array(
+						'general'       => __( 'General', 'rar-woo-advance-payment' ),
+						'rules'         => __( 'Payment rules', 'rar-woo-advance-payment' ),
+						'verification'  => __( 'Verification', 'rar-woo-advance-payment' ),
+						'notifications' => __( 'Notifications & automation', 'rar-woo-advance-payment' ),
+						'channels'      => __( 'Channels', 'rar-woo-advance-payment' ),
+						'on'            => __( 'On', 'rar-woo-advance-payment' ),
+						'preview'       => __( 'Live amount preview', 'rar-woo-advance-payment' ),
+						'products'      => __( 'Products', 'rar-woo-advance-payment' ),
+						'shipping'      => __( 'Shipping', 'rar-woo-advance-payment' ),
+						'total'         => __( 'Order total', 'rar-woo-advance-payment' ),
+						'payNow'        => __( 'Customer pays now', 'rar-woo-advance-payment' ),
+						'onDelivery'    => __( 'on delivery', 'rar-woo-advance-payment' ),
+						'hidden'        => __( 'Gateway hidden (nothing to pay now)', 'rar-woo-advance-payment' ),
+						'choose'        => __( 'Choose image', 'rar-woo-advance-payment' ),
+						'remove'        => __( 'Remove', 'rar-woo-advance-payment' ),
+						'needsNumber'   => __( 'Add a number to show this channel', 'rar-woo-advance-payment' ),
+						'ready'         => __( 'Shown at checkout', 'rar-woo-advance-payment' ),
+						'off'           => __( 'Not shown', 'rar-woo-advance-payment' ),
+					),
+				)
+			);
 		}
 
 		if ( $is_order_page || $is_dashboard ) {
@@ -201,11 +224,21 @@ class RAR_WAP_Plugin {
 						'confirmReject' => __( 'Mark this payment as unverified and notify the customer?', 'rar-woo-advance-payment' ),
 						'confirmReset'  => __( 'Undo this decision and move the payment back to "Awaiting verification"?', 'rar-woo-advance-payment' ),
 						'confirmBulk'   => __( 'Verify ALL selected advance payments? Only do this after checking every transfer.', 'rar-woo-advance-payment' ),
-						'amountPrompt'  => __( 'Received amount (leave as-is if it matches):', 'rar-woo-advance-payment' ),
-						'reasonPrompt'  => __( 'Reason / note for the customer (optional):', 'rar-woo-advance-payment' ),
+						'verifyTitle'   => __( 'Verify payment', 'rar-woo-advance-payment' ),
+						'rejectTitle'   => __( 'Reject payment', 'rar-woo-advance-payment' ),
+						'resetTitle'    => __( 'Reopen payment', 'rar-woo-advance-payment' ),
+						'verifyBtn'     => __( 'Verify & notify', 'rar-woo-advance-payment' ),
+						'rejectBtn'     => __( 'Reject & notify', 'rar-woo-advance-payment' ),
+						'resetBtn'      => __( 'Move to awaiting', 'rar-woo-advance-payment' ),
+						'channel'       => __( 'Channel', 'rar-woo-advance-payment' ),
+						'paidFrom'      => __( 'Paid from', 'rar-woo-advance-payment' ),
+						'orderTotal'    => __( 'Order total', 'rar-woo-advance-payment' ),
+						'copied'        => __( 'Copied to clipboard', 'rar-woo-advance-payment' ),
+						'updated'       => __( 'Dashboard updated', 'rar-woo-advance-payment' ),
+						'newPayment'    => __( 'New advance payment received', 'rar-woo-advance-payment' ),
+						'refresh'       => __( 'Show', 'rar-woo-advance-payment' ),
 						'working'       => __( 'Working…', 'rar-woo-advance-payment' ),
 						'failed'        => __( 'Action failed. Please reload and try again.', 'rar-woo-advance-payment' ),
-						'webhookOk'     => __( 'Test webhook sent.', 'rar-woo-advance-payment' ),
 					),
 				)
 			);

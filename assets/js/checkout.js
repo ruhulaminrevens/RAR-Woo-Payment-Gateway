@@ -1,10 +1,10 @@
 /**
- * RAR Advance Payment — classic checkout behaviour.
+ * RAR Advance Payment — classic checkout behaviour (v2.1).
  */
 ( function ( $ ) {
 	'use strict';
 
-	var L = window.rarWapCheckout || {};
+	var S = window.rarWapCheckout || {};
 	var memory = { channel: '', payer: '', reference: '' };
 
 	function bnDigits( value ) {
@@ -21,40 +21,42 @@
 		return /^01[3-9]\d{8,9}$/.test( digits ) ? digits : '';
 	}
 
-	function channelType() {
-		var $checked = $( 'input[name="rar_wap_channel"]:checked' );
-		return $checked.length ? String( $checked.closest( '.rar-wap-channel' ).data( 'type' ) || '' ) : '';
+	function selectedTile() {
+		return $( '.rar-wap input[name="rar_wap_channel"]:checked' ).closest( '.rw-tile' );
 	}
 
 	function sync() {
-		$( '.rar-wap-channel' ).removeClass( 'is-active' );
-		$( '.rar-wap-channel input[type="radio"]:checked' ).closest( '.rar-wap-channel' ).addClass( 'is-active' );
-	}
-
-	function updatePlaceholders() {
-		var type = channelType();
-		var $payer = $( '#rar_wap_payer' );
-		var $reference = $( '#rar_wap_reference' );
-
-		if ( type === 'mfs' ) {
-			$payer.attr( { placeholder: L.phMobile || '01XXXXXXXXX', inputmode: 'tel' } );
-			$reference.attr( 'placeholder', L.phTrx || '' );
-		} else if ( type === 'bank' ) {
-			$payer.attr( { placeholder: L.phAccount || '', inputmode: 'text' } );
-			$reference.attr( 'placeholder', L.phBankTrx || '' );
-		} else {
-			$payer.attr( { placeholder: L.phGeneric || '', inputmode: 'text' } );
-			$reference.attr( 'placeholder', L.phTrx || '' );
+		var $root = $( '.rar-wap' );
+		if ( ! $root.length ) {
+			return;
 		}
+		var value = $root.find( 'input[name="rar_wap_channel"]:checked' ).val() || '';
+		$root.find( '.rw-tile' ).removeClass( 'is-on' ).attr( 'aria-checked', 'false' );
+		var $tile = selectedTile().addClass( 'is-on' ).attr( 'aria-checked', 'true' );
+
+		$root.find( '.rw-panel' ).each( function () {
+			this.hidden = $( this ).data( 'panel' ) !== value;
+		} );
+		$root.find( '.rw-pick' ).prop( 'hidden', !! value );
+
+		var type = String( $tile.data( 'type' ) || '' );
+		var $payer = $( '#rar_wap_payer' );
+		if ( $tile.length ) {
+			$root.find( '.rw-payer-label' ).text( $tile.data( 'payer' ) );
+		}
+		$payer.attr( {
+			placeholder: type === 'mfs' ? ( S.ph_mobile || '01XXXXXXXXX' ) : ( S.ph_account || '' ),
+			inputmode: type === 'mfs' ? 'tel' : 'text',
+		} );
+		$( '#rar_wap_reference' ).attr( 'placeholder', type === 'bank' ? ( S.ph_bank_trx || '' ) : ( S.ph_trx || '' ) );
 	}
 
-	function setFieldError( $field, message ) {
-		var $row = $field.closest( '.form-row' );
-		$row.find( '.rar-wap-inline-error' ).remove();
-		$row.removeClass( 'woocommerce-invalid' );
+	function setError( $input, message ) {
+		var $field = $input.closest( '.rw-field' );
+		$field.removeClass( 'is-bad' ).find( '.rw-err' ).remove();
 		if ( message ) {
-			$row.addClass( 'woocommerce-invalid' );
-			$( '<small class="rar-wap-inline-error" role="alert"></small>' ).text( message ).appendTo( $row );
+			$field.addClass( 'is-bad' );
+			$( '<span class="rw-err" role="alert"></span>' ).text( message ).appendTo( $field );
 		}
 	}
 
@@ -67,7 +69,7 @@
 		memory.reference = $( '#rar_wap_reference' ).val() || '';
 	}
 
-	/** WooCommerce re-renders the payment box on every checkout update; restore what the customer typed. */
+	/* WooCommerce re-renders the payment box on every checkout update; restore what was typed. */
 	function restore() {
 		if ( memory.channel && ! $( 'input[name="rar_wap_channel"]:checked' ).length ) {
 			$( 'input[name="rar_wap_channel"]' ).filter( function () {
@@ -82,7 +84,7 @@
 		}
 	}
 
-	function legacyCopy( value, done ) {
+	function legacyCopy( value ) {
 		var input = document.createElement( 'textarea' );
 		input.value = value;
 		input.setAttribute( 'readonly', 'readonly' );
@@ -90,86 +92,83 @@
 		input.style.opacity = '0';
 		document.body.appendChild( input );
 		input.select();
+		var ok = false;
 		try {
-			document.execCommand( 'copy' );
-			done();
+			ok = document.execCommand( 'copy' );
 		} catch ( e ) {}
 		document.body.removeChild( input );
+		return ok;
 	}
 
 	function copyText( value, button ) {
-		if ( ! value ) {
-			return;
-		}
+		var $btn = $( button );
+		var $label = $btn.find( 'span' );
 		var done = function () {
-			var $btn = $( button );
-			var old = $btn.data( 'label' ) || $btn.text();
-			$btn.data( 'label', old ).addClass( 'is-copied' ).text( L.copied || 'Copied ✓' );
+			var old = $btn.data( 'label' ) || $label.text();
+			$btn.data( 'label', old ).addClass( 'is-done' );
+			$label.text( S.copied || 'Copied' );
+			if ( navigator.vibrate ) {
+				navigator.vibrate( 20 );
+			}
 			window.setTimeout( function () {
-				$btn.removeClass( 'is-copied' ).text( old );
-			}, 1400 );
+				$btn.removeClass( 'is-done' );
+				$label.text( old );
+			}, 1500 );
 		};
-
 		if ( navigator.clipboard && window.isSecureContext ) {
 			navigator.clipboard.writeText( value ).then( done ).catch( function () {
-				legacyCopy( value, done );
+				if ( legacyCopy( value ) ) {
+					done();
+				}
 			} );
-		} else {
-			legacyCopy( value, done );
+		} else if ( legacyCopy( value ) ) {
+			done();
 		}
 	}
 
-	$( document.body ).on( 'change', 'input[name="rar_wap_channel"]', function () {
+	$( document.body ).on( 'change', '.rar-wap input[name="rar_wap_channel"]', function () {
 		sync();
-		updatePlaceholders();
 		remember();
-		setFieldError( $( '#rar_wap_payer' ), '' );
+		setError( $( '#rar_wap_payer' ), '' );
 	} );
 
-	$( document.body ).on( 'input', '#rar_wap_payer, #rar_wap_reference', remember );
+	$( document.body ).on( 'input', '#rar_wap_payer, #rar_wap_reference', function () {
+		setError( $( this ), '' );
+		remember();
+	} );
 
 	$( document.body ).on( 'blur', '#rar_wap_payer', function () {
-		var $field = $( this );
-		var value = bnDigits( $field.val() ).trim();
-		if ( channelType() === 'mfs' && L.validateMfs && value ) {
+		var $input = $( this );
+		var value = bnDigits( $input.val() ).trim();
+		if ( String( selectedTile().data( 'type' ) ) === 'mfs' && S.validateMfs && value ) {
 			var mobile = normalizeMobile( value );
-			if ( mobile ) {
-				$field.val( mobile );
-				setFieldError( $field, '' );
-			} else {
-				setFieldError( $field, L.errMobile || '' );
-			}
+			$input.val( mobile || value );
+			setError( $input, mobile ? '' : ( S.err_mobile || '' ) );
 		} else {
-			$field.val( value );
-			setFieldError( $field, '' );
+			$input.val( value );
 		}
 		remember();
 	} );
 
 	$( document.body ).on( 'blur', '#rar_wap_reference', function () {
-		var $field = $( this );
-		var value = bnDigits( $field.val() ).toUpperCase().replace( /\s+/g, '' );
-		$field.val( value );
-		setFieldError( $field, value && ! /^[A-Z0-9][A-Z0-9\-_\/.#]{3,39}$/.test( value ) ? ( L.errTrx || '' ) : '' );
+		var $input = $( this );
+		var value = bnDigits( $input.val() ).toUpperCase().replace( /\s+/g, '' );
+		$input.val( value );
+		setError( $input, value && ! /^[A-Z0-9][A-Z0-9\-_\/.#]{3,39}$/.test( value ) ? ( S.err_trx || '' ) : '' );
 		remember();
 	} );
 
-	$( document.body ).on( 'click', '.rar-wap-copy', function ( e ) {
+	$( document.body ).on( 'click', '.rar-wap .rw-copy', function ( e ) {
 		e.preventDefault();
 		e.stopPropagation();
 		copyText( String( $( this ).data( 'copy' ) || '' ), this );
 	} );
 
 	$( document.body ).on( 'update_checkout', remember );
-
 	$( document.body ).on( 'updated_checkout payment_method_selected', function () {
 		restore();
 		sync();
-		updatePlaceholders();
 	} );
 
-	$( function () {
-		sync();
-		updatePlaceholders();
-	} );
+	$( sync );
 }( jQuery ) );

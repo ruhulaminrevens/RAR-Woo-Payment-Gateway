@@ -263,6 +263,119 @@ class RAR_WAP_Query {
 	}
 
 	/**
+	 * Submissions per day and payment state (for the trend chart).
+	 *
+	 * @return array<int,array{day:string,status:string,orders:int,amount:float}>
+	 */
+	public static function daily( $date_from, $date_to ) {
+		global $wpdb;
+
+		$s = self::schema();
+		list( $joins, $where, $params ) = self::build( array( 'date_from' => $date_from, 'date_to' => $date_to ) );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT SUBSTR(sub.meta_value,1,10) AS day, st.meta_value AS status, COUNT(DISTINCT o.{$s['pk']}) AS orders, COALESCE(SUM(CAST(amt.meta_value AS DECIMAL(14,2))),0) AS amount
+				FROM {$s['orders']} o {$joins} WHERE {$where}
+				GROUP BY SUBSTR(sub.meta_value,1,10), st.meta_value",
+				$params
+			),
+			ARRAY_A
+		);
+
+		$out = array();
+		foreach ( (array) $rows as $row ) {
+			$out[] = array(
+				'day'    => (string) $row['day'],
+				'status' => (string) $row['status'],
+				'orders' => (int) $row['orders'],
+				'amount' => (float) $row['amount'],
+			);
+		}
+		return $out;
+	}
+
+	/**
+	 * Verified payments in a period with timing and staff (for speed/team stats).
+	 *
+	 * @return array<int,array{submitted:string,verified:string,user:int,amount:float}>
+	 */
+	public static function verified_rows( $date_from, $date_to, $limit = 2000 ) {
+		global $wpdb;
+
+		$s = self::schema();
+		list( $joins, $where, $params ) = self::build(
+			array(
+				'status'     => 'verified',
+				'date_field' => 'verified',
+				'date_from'  => $date_from,
+				'date_to'    => $date_to,
+			)
+		);
+		$joins .= " LEFT JOIN {$s['meta']} vb ON vb.{$s['fk']} = o.{$s['pk']} AND vb.meta_key = '_rar_wap_verified_by'";
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT sub.meta_value AS submitted, ver.meta_value AS verified, vb.meta_value AS user_id, amt.meta_value AS amount
+				FROM {$s['orders']} o {$joins} WHERE {$where} LIMIT %d",
+				array_merge( $params, array( max( 1, absint( $limit ) ) ) )
+			),
+			ARRAY_A
+		);
+
+		$out = array();
+		foreach ( (array) $rows as $row ) {
+			$out[] = array(
+				'submitted' => (string) $row['submitted'],
+				'verified'  => (string) $row['verified'],
+				'user'      => absint( $row['user_id'] ),
+				'amount'    => (float) $row['amount'],
+			);
+		}
+		return $out;
+	}
+
+	/**
+	 * Orders with the most recent payment activity (submit / verify / reject / correction).
+	 *
+	 * @return int[]
+	 */
+	public static function recent_activity_ids( $limit = 10 ) {
+		global $wpdb;
+
+		$s     = self::schema();
+		$trash = self::status_values( array( 'trash', 'checkout-draft' ) );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT m.{$s['fk']} FROM {$s['meta']} m
+				INNER JOIN {$s['orders']} o ON o.{$s['pk']} = m.{$s['fk']}
+				WHERE m.meta_key IN ('_rar_wap_submitted_at','_rar_wap_verified_at','_rar_wap_rejected_at','_rar_wap_resubmitted_at','_rar_wap_proof_uploaded_at')
+					AND o.{$s['status']} NOT IN (" . self::in_placeholders( $trash ) . ')
+				ORDER BY m.meta_value DESC LIMIT %d',
+				array_merge( $trash, array( absint( $limit ) * 4 ) )
+			)
+		);
+
+		return array_slice( array_values( array_unique( array_map( 'absint', (array) $rows ) ) ), 0, absint( $limit ) );
+	}
+
+	/**
+	 * Most recent submission timestamp among pending payments (for live polling).
+	 */
+	public static function latest_submission() {
+		$result = self::list_ids( array( 'status' => 'submitted' ), 1, 1 );
+		if ( ! $result['ids'] ) {
+			return '';
+		}
+		$order = wc_get_order( $result['ids'][0] );
+		return $order ? (string) $order->get_meta( '_rar_wap_submitted_at' ) . '#' . $order->get_id() : '';
+	}
+
+	/**
 	 * Number of orders awaiting verification (cached briefly for the menu badge).
 	 */
 	public static function pending_count( $force = false ) {

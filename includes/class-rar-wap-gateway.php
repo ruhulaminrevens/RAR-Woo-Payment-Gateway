@@ -108,6 +108,14 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 				'placeholder' => __( 'Leave blank to use the WooCommerce default', 'rar-woo-advance-payment' ),
 			),
 
+			'accent_color'              => array(
+				'title'       => __( 'Accent colour', 'rar-woo-advance-payment' ),
+				'type'        => 'color',
+				'default'     => '#0f8a6b',
+				'css'         => 'width:7em;',
+				'description' => __( 'Main colour of the checkout payment box and order page (use your brand colour).', 'rar-woo-advance-payment' ),
+			),
+
 			'rules_heading'             => array(
 				'title'       => __( 'Payment Rules', 'rar-woo-advance-payment' ),
 				'type'        => 'title',
@@ -474,28 +482,46 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 	public function admin_options() {
 		$health   = $this->get_configuration_health();
 		$channels = $this->get_enabled_channels();
-		$pending  = class_exists( 'RAR_WAP_Query' ) ? RAR_WAP_Query::pending_count() : 0;
+		$pending  = RAR_WAP_Query::pending_count();
+		$any      = RAR_WAP_Query::list_ids( array(), 1, 1 )['total'];
+		$settings = RAR_WAP_Plugin::settings();
 
-		echo '<div class="rar-wap-admin-hero">';
-		echo '<div><span class="rar-wap-kicker">' . esc_html__( 'RAR Woo Payment Gateway', 'rar-woo-advance-payment' ) . ' · v' . esc_html( RAR_WAP_VERSION ) . '</span>';
-		echo '<h2>' . esc_html__( 'Advance Payment Control Center', 'rar-woo-advance-payment' ) . '</h2>';
-		echo '<p>' . esc_html__( 'Configure a safe manual payment workflow, test it privately, and verify every submitted transfer before fulfilment.', 'rar-woo-advance-payment' ) . '</p>';
-		echo '<p class="rar-wap-hero-links"><a class="button button-primary" href="' . esc_url( RAR_WAP_Dashboard::url() ) . '">' . esc_html__( 'Open verification dashboard', 'rar-woo-advance-payment' ) . '</a></p></div>';
-		echo '<div class="rar-wap-health ' . esc_attr( $health['class'] ) . '"><strong>' . esc_html( $health['label'] ) . '</strong><span>' . esc_html( $health['message'] ) . '</span></div>';
-		echo '</div>';
-
-		echo '<div class="rar-wap-admin-stats">';
-		echo '<div><span>' . esc_html__( 'Gateway', 'rar-woo-advance-payment' ) . '</span><strong>' . ( 'yes' === $this->enabled ? esc_html__( 'Enabled', 'rar-woo-advance-payment' ) : esc_html__( 'Disabled', 'rar-woo-advance-payment' ) ) . '</strong></div>';
-		echo '<div><span>' . esc_html__( 'Visibility', 'rar-woo-advance-payment' ) . '</span><strong>' . ( $this->is_safe_test_mode() ? esc_html__( 'Safe Test', 'rar-woo-advance-payment' ) : esc_html__( 'Live', 'rar-woo-advance-payment' ) ) . '</strong></div>';
-		echo '<div><span>' . esc_html__( 'Usable channels', 'rar-woo-advance-payment' ) . '</span><strong>' . esc_html( $channels ? implode( ', ', $channels ) : '0' ) . '</strong></div>';
-		echo '<div><span>' . esc_html__( 'Requirement', 'rar-woo-advance-payment' ) . '</span><strong>' . ( $this->is_force_required() ? esc_html__( 'Required', 'rar-woo-advance-payment' ) : esc_html__( 'Optional', 'rar-woo-advance-payment' ) ) . '</strong></div>';
-		echo '<div><span>' . esc_html__( 'Awaiting verification', 'rar-woo-advance-payment' ) . '</span><strong>' . esc_html( (string) $pending ) . '</strong></div>';
-		echo '</div>';
-
-		echo '<div class="rar-wap-admin-guidance"><strong>' . esc_html__( 'Safe rollout:', 'rar-woo-advance-payment' ) . '</strong> ';
-		echo esc_html__( 'Keep Safe Test Mode ON → configure a channel → place a low-value test order → verify it from the dashboard → then turn Safe Test Mode OFF.', 'rar-woo-advance-payment' );
-		echo '</div>';
-
+		$steps = array(
+			array( 'yes' === $this->enabled, __( 'Enable the gateway', 'rar-woo-advance-payment' ), 'general' ),
+			array( ! empty( $channels ), __( 'Add at least one payment channel', 'rar-woo-advance-payment' ), 'channels' ),
+			array( '' !== trim( (string) ( $settings['admin_email'] ?? '' ) ), __( 'Set who gets payment alerts', 'rar-woo-advance-payment' ), 'notifications' ),
+			array( $any > 0, __( 'Place a low-value test order', 'rar-woo-advance-payment' ), '' ),
+			array( ! $this->is_safe_test_mode(), __( 'Turn off Safe Test Mode to go live', 'rar-woo-advance-payment' ), 'general' ),
+		);
+		$done = count( array_filter( wp_list_pluck( $steps, 0 ) ) );
+		?>
+		<div class="rws-hero">
+			<div class="rws-hero-main">
+				<span class="rws-kicker">RAR Advance Payment · v<?php echo esc_html( RAR_WAP_VERSION ); ?></span>
+				<h2><?php esc_html_e( 'Payment settings', 'rar-woo-advance-payment' ); ?>
+					<span class="rws-state <?php echo esc_attr( $health['class'] ); ?>"><i></i><?php echo esc_html( $health['label'] ); ?></span></h2>
+				<p><?php echo esc_html( $health['message'] ); ?></p>
+				<a class="rwa-btn is-glass" href="<?php echo esc_url( RAR_WAP_Dashboard::url() ); ?>"><?php esc_html_e( 'Open payments dashboard', 'rar-woo-advance-payment' ); ?> →</a>
+				<div class="rws-hero-stats">
+					<div><span><?php esc_html_e( 'Awaiting', 'rar-woo-advance-payment' ); ?></span><strong><?php echo esc_html( (string) $pending ); ?></strong></div>
+					<div><span><?php esc_html_e( 'Channels', 'rar-woo-advance-payment' ); ?></span><strong><?php echo esc_html( (string) count( $channels ) ); ?></strong></div>
+					<div><span><?php esc_html_e( 'Mode', 'rar-woo-advance-payment' ); ?></span><strong><?php echo $this->is_force_required() ? esc_html__( 'Required', 'rar-woo-advance-payment' ) : esc_html__( 'Optional', 'rar-woo-advance-payment' ); ?></strong></div>
+					<div><span><?php esc_html_e( 'Visibility', 'rar-woo-advance-payment' ); ?></span><strong><?php echo $this->is_safe_test_mode() ? esc_html__( 'Staff only', 'rar-woo-advance-payment' ) : esc_html__( 'Everyone', 'rar-woo-advance-payment' ); ?></strong></div>
+				</div>
+			</div>
+			<div class="rws-check">
+				<h3><?php esc_html_e( 'Setup checklist', 'rar-woo-advance-payment' ); ?> <span><?php echo esc_html( $done . ' / ' . count( $steps ) ); ?></span></h3>
+				<div class="rws-progress"><i style="width:<?php echo esc_attr( (string) round( $done / count( $steps ) * 100 ) ); ?>%"></i></div>
+				<ol>
+					<?php foreach ( $steps as $step ) : ?>
+						<li class="<?php echo $step[0] ? 'is-done' : ''; ?>"><b>✓</b><span><?php echo esc_html( $step[1] ); ?></span>
+							<?php if ( ! $step[0] && $step[2] ) : ?><a href="#" data-rws-tab="<?php echo esc_attr( $step[2] ); ?>"><?php esc_html_e( 'Set up', 'rar-woo-advance-payment' ); ?></a><?php endif; ?>
+						</li>
+					<?php endforeach; ?>
+				</ol>
+			</div>
+		</div>
+		<?php
 		parent::admin_options();
 	}
 
@@ -846,70 +872,85 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 		return '';
 	}
 
-	private function copy_button( $value, $label ) {
+	/** Brand tint per channel (fallback icon colour only). */
+	const TINTS = array(
+		'bkash'    => '#e2136e',
+		'nagad'    => '#ec6a1c',
+		'rocket'   => '#8c3494',
+		'upay'     => '#0a58ca',
+		'banglaqr' => '#006a4e',
+		'bank'     => '#1f4e79',
+		'custom'   => '#475569',
+	);
+
+	public static function accent_color( $value = null ) {
+		$value = null === $value ? (string) ( RAR_WAP_Plugin::settings()['accent_color'] ?? '' ) : (string) $value;
+		$color = sanitize_hex_color( $value );
+		return $color ? $color : '#0f8a6b';
+	}
+
+	private function copy_button( $value, $label, $text = null ) {
 		if ( '' === trim( (string) $value ) ) {
 			return '';
 		}
 
 		return sprintf(
-			'<button type="button" class="rar-wap-copy" data-copy="%1$s" aria-label="%2$s">%3$s</button>',
+			'<button type="button" class="rw-copy" data-copy="%1$s" aria-label="%2$s"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 3h9a2 2 0 0 1 2 2v11h-2V5H8V3zM5 7h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm0 2v10h9V9H5z"/></svg><span>%3$s</span></button>',
 			esc_attr( $value ),
 			esc_attr( $label ),
-			esc_html( RAR_WAP_I18n::t( 'copy' ) )
+			esc_html( null === $text ? RAR_WAP_I18n::t( 'copy' ) : $text )
 		);
 	}
 
+	public static function icon_svg( $type ) {
+		if ( 'qr' === $type ) {
+			return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M3 3h7v7H3V3zm2 2v3h3V5H5zm9-2h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5zm9-2h3v3h-3v-3zm4 0h3v7h-3v-3h-2v-2h2v-2zm-4 5h2v2h-2v-2z"/></svg>';
+		}
+		if ( 'bank' === $type ) {
+			return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 3 3 7v2h18V7l-9-4zM5 11h2v7H5v-7zm4 0h2v7H9v-7zm4 0h2v7h-2v-7zm4 0h2v7h-2v-7zM3 20h18v2H3v-2z"/></svg>';
+		}
+		return '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 3v13h10V5H7zm5 14.2a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4z"/></svg>';
+	}
+
 	public function channel_icon_html( array $channel ) {
-		$key = sanitize_key( $channel['key'] );
+		$key  = sanitize_key( $channel['key'] );
+		$tint = self::TINTS[ $key ] ?? self::TINTS['custom'];
 
 		if ( $channel['logo'] ) {
 			return sprintf(
-				'<span class="rar-wap-channel-icon has-logo is-%1$s" aria-hidden="true"><img src="%2$s" alt="" loading="eager" decoding="async"></span>',
-				esc_attr( $key ),
+				'<span class="rw-ico has-logo" aria-hidden="true"><img src="%s" alt="" loading="lazy" decoding="async"></span>',
 				esc_url( $channel['logo'] )
 			);
 		}
 
-		if ( 'qr' === $channel['type'] ) {
-			$svg = '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M3 3h7v7H3V3zm2 2v3h3V5H5zm9-2h7v7h-7V3zm2 2v3h3V5h-3zM3 14h7v7H3v-7zm2 2v3h3v-3H5zm9-2h3v3h-3v-3zm4 0h3v7h-3v-3h-2v-2h2v-2zm-4 5h2v2h-2v-2z"/></svg>';
-		} elseif ( 'bank' === $channel['type'] ) {
-			$svg = '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M12 3 3 7v2h18V7l-9-4zM5 11h2v7H5v-7zm4 0h2v7H9v-7zm4 0h2v7h-2v-7zm4 0h2v7h-2v-7zM3 20h18v2H3v-2z"/></svg>';
-		} else {
-			$svg = '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path d="M4 5h13a3 3 0 0 1 3 3v1h-5a4 4 0 0 0 0 8h5v1a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3zm11 6h7v4h-7a2 2 0 1 1 0-4z"/></svg>';
-		}
-
-		return '<span class="rar-wap-channel-icon is-' . esc_attr( $key ) . '" aria-hidden="true">' . $svg . '</span>';
+		return '<span class="rw-ico" style="--rw-tint:' . esc_attr( $tint ) . '" aria-hidden="true">' . self::icon_svg( $channel['type'] ) . '</span>';
 	}
 
-	public function channel_details_html( array $channel ) {
-		$html = '';
+	/**
+	 * "Send the money" panel for one channel.
+	 */
+	public function channel_panel_html( array $channel, $amount ) {
+		$amount_text = html_entity_decode( wp_strip_all_tags( wc_price( $amount ) ), ENT_QUOTES, 'UTF-8' );
+		$amount_raw  = wc_format_decimal( $amount, wc_get_price_decimals() );
+		$html        = '';
 
 		if ( 'qr' === $channel['type'] ) {
-			$html .= sprintf(
-				'<span class="rar-wap-qr"><a class="rar-wap-qr-link" href="%1$s" target="_blank" rel="noopener"><img src="%1$s" alt="%2$s" loading="eager" decoding="async"></a><small class="rar-wap-qr-enlarge">%3$s</small></span>',
-				esc_url( $channel['qr'] ),
-				esc_attr__( 'Bangla QR payment code', 'rar-woo-advance-payment' ),
-				esc_html( RAR_WAP_I18n::t( 'qr_enlarge' ) )
-			);
-			if ( $channel['instruction'] ) {
-				$html .= '<span class="rar-wap-channel-note">' . esc_html( $channel['instruction'] ) . '</span>';
-			}
-			return $html;
+			$html .= '<div class="rw-qr"><a href="' . esc_url( $channel['qr'] ) . '" target="_blank" rel="noopener"><img src="' . esc_url( $channel['qr'] ) . '" alt="' . esc_attr__( 'Bangla QR payment code', 'rar-woo-advance-payment' ) . '" loading="lazy" decoding="async"></a>'
+				. '<p>' . esc_html( $channel['instruction'] ? $channel['instruction'] : RAR_WAP_I18n::t( 'scan_qr' ) ) . '</p>'
+				. '<a class="rw-link" href="' . esc_url( $channel['qr'] ) . '" target="_blank" rel="noopener">' . esc_html( RAR_WAP_I18n::t( 'open_qr' ) ) . ' ↗</a></div>';
+		} elseif ( '' !== $channel['number'] ) {
+			$label = 'mfs' === $channel['type'] ? RAR_WAP_I18n::t( 'send_to' ) : RAR_WAP_I18n::t( 'account_no' );
+			$html .= '<div class="rw-row"><div><small>' . esc_html( $label ) . ( 'mfs' === $channel['type'] && $channel['instruction'] ? ' · <b>' . esc_html( $channel['instruction'] ) . '</b>' : '' ) . '</small>'
+				. '<strong class="rw-mono">' . esc_html( $channel['number'] ) . '</strong></div>'
+				/* translators: %s: channel */
+				. $this->copy_button( preg_replace( '/[^0-9A-Za-z]/', '', $channel['number'] ), sprintf( __( 'Copy %s number', 'rar-woo-advance-payment' ), $channel['label'] ) ) . '</div>';
 		}
 
-		if ( '' !== $channel['number'] ) {
-			$html .= sprintf(
-				'<span class="rar-wap-destination"><span><small>%1$s</small><strong>%2$s</strong><code>%3$s</code></span>%4$s</span>',
-				esc_html( 'mfs' === $channel['type'] ? RAR_WAP_I18n::t( 'instruction' ) : RAR_WAP_I18n::t( 'account_type' ) ),
-				esc_html( $channel['instruction'] ? $channel['instruction'] : $channel['label'] ),
-				esc_html( $channel['number'] ),
-				/* translators: %s: channel */
-				$this->copy_button( $channel['number'], sprintf( __( 'Copy %s number', 'rar-woo-advance-payment' ), $channel['label'] ) )
-			);
-		}
+		$html .= '<div class="rw-row"><div><small>' . esc_html( RAR_WAP_I18n::t( 'amount' ) ) . '</small><strong>' . esc_html( $amount_text ) . '</strong></div>'
+			. $this->copy_button( $amount_raw, __( 'Copy amount', 'rar-woo-advance-payment' ) ) . '</div>';
 
 		if ( '' !== $channel['details'] ) {
-			$html .= '<span class="rar-wap-bank-details">' . nl2br( esc_html( $channel['details'] ) ) . '</span>';
+			$html .= '<div class="rw-details">' . nl2br( esc_html( $channel['details'] ) ) . '</div>';
 		}
 
 		return $html;
@@ -927,87 +968,82 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 		if ( ! isset( $channels[ $selected ] ) ) {
 			$selected = 1 === count( $channels ) ? (string) key( $channels ) : '';
 		}
+		$current = $selected ? $channels[ $selected ] : null;
 
-		if ( $this->description ) {
-			echo '<div class="rar-wap-intro">' . wp_kses_post( wpautop( $this->description ) ) . '</div>';
-		}
-
-		$allowed_icon = array(
-			'span' => array( 'class' => true, 'aria-hidden' => true ),
+		$kses_ico = array(
+			'span' => array( 'class' => true, 'aria-hidden' => true, 'style' => true ),
 			'img'  => array( 'src' => true, 'alt' => true, 'loading' => true, 'decoding' => true ),
 			'svg'  => array( 'viewbox' => true, 'focusable' => true, 'aria-hidden' => true ),
 			'path' => array( 'd' => true ),
 		);
-		$allowed_details = array(
-			'span'   => array( 'class' => true ),
-			'small'  => array( 'class' => true ),
-			'strong' => array(),
-			'code'   => array(),
+		$kses_panel = array(
+			'div'    => array( 'class' => true ),
+			'p'      => array(),
+			'small'  => array(),
+			'b'      => array(),
+			'strong' => array( 'class' => true ),
 			'br'     => array(),
 			'a'      => array( 'class' => true, 'href' => true, 'target' => true, 'rel' => true ),
 			'img'    => array( 'src' => true, 'alt' => true, 'loading' => true, 'decoding' => true ),
+			'span'   => array(),
+			'svg'    => array( 'viewbox' => true, 'focusable' => true, 'aria-hidden' => true ),
+			'path'   => array( 'd' => true ),
 			'button' => array( 'type' => true, 'class' => true, 'data-copy' => true, 'aria-label' => true ),
 		);
-		?>
-		<div class="rar-wap-box" data-amount="<?php echo esc_attr( (string) $amount ); ?>">
-			<div class="rar-wap-trust-strip" role="note">
-				<span>✓ <?php RAR_WAP_I18n::e( 'trust_manual' ); ?></span>
-				<span>🔒 <?php RAR_WAP_I18n::e( 'trust_nopin' ); ?></span>
-				<span>✓ <?php RAR_WAP_I18n::e( 'trust_linked' ); ?></span>
-			</div>
 
-			<div class="rar-wap-summary">
-				<div class="is-primary">
+		$payer_label = $current && 'mfs' === $current['type'] ? RAR_WAP_I18n::t( 'payer_label', $current['label'] ) : RAR_WAP_I18n::t( 'payer_label_generic' );
+		$payer_ph    = $current && 'mfs' === $current['type'] ? RAR_WAP_I18n::t( 'ph_mobile' ) : RAR_WAP_I18n::t( 'ph_account' );
+		?>
+		<div class="rar-wap" style="--rw-accent:<?php echo esc_attr( self::accent_color( $this->get_option( 'accent_color', '' ) ) ); ?>">
+			<div class="rw-amount">
+				<div class="rw-amount-now">
 					<span><?php RAR_WAP_I18n::e( 'pay_now' ); ?></span>
 					<strong><?php echo wp_kses_post( wc_price( $amount ) ); ?></strong>
-					<small><?php RAR_WAP_I18n::e( 'transfer_exact' ); ?></small>
 				</div>
-				<div>
-					<span><?php RAR_WAP_I18n::e( 'due_on_delivery' ); ?></span>
-					<strong><?php echo wp_kses_post( wc_price( $balance ) ); ?></strong>
-					<small><?php RAR_WAP_I18n::e( $balance > 0 ? 'remaining_balance' : 'fully_paid_now' ); ?></small>
+				<div class="rw-amount-rest">
+					<?php if ( $balance > 0 ) : ?>
+						<span><?php RAR_WAP_I18n::e( 'on_delivery' ); ?></span>
+						<strong><?php echo wp_kses_post( wc_price( $balance ) ); ?></strong>
+					<?php else : ?>
+						<span><?php RAR_WAP_I18n::e( 'nothing_on_delivery' ); ?></span>
+					<?php endif; ?>
 				</div>
 			</div>
 
-			<ol class="rar-wap-steps" aria-label="<?php esc_attr_e( 'Payment steps', 'rar-woo-advance-payment' ); ?>">
-				<li><span>1</span><strong><?php RAR_WAP_I18n::e( 'step_channel' ); ?></strong></li>
-				<li><span>2</span><strong><?php RAR_WAP_I18n::e( 'step_pay' ); ?></strong></li>
-				<li><span>3</span><strong><?php RAR_WAP_I18n::e( 'step_submit' ); ?></strong></li>
-			</ol>
-
-			<p class="rar-wap-help"><?php RAR_WAP_I18n::e( 'help' ); ?></p>
-
-			<div class="rar-wap-channels" role="radiogroup" aria-label="<?php esc_attr_e( 'Payment channel', 'rar-woo-advance-payment' ); ?>">
+			<div class="rw-step"><i>1</i><span><?php RAR_WAP_I18n::e( 'step_choose' ); ?></span></div>
+			<div class="rw-tiles rw-n<?php echo esc_attr( (string) min( 3, count( $channels ) ) ); ?><?php echo count( $channels ) % 2 ? ' rw-odd' : ''; ?>" role="radiogroup">
 				<?php foreach ( $channels as $key => $channel ) : ?>
-					<label class="rar-wap-channel<?php echo $selected === $key ? ' is-active' : ''; ?>" data-channel="<?php echo esc_attr( $key ); ?>" data-type="<?php echo esc_attr( $channel['type'] ); ?>">
-						<span class="rar-wap-channel-head">
-							<input type="radio" name="rar_wap_channel" value="<?php echo esc_attr( $key ); ?>" <?php checked( $selected, $key ); ?>>
-							<?php echo wp_kses( $this->channel_icon_html( $channel ), $allowed_icon ); ?>
-							<span>
-								<strong><?php echo esc_html( $channel['label'] ); ?></strong>
-								<small><?php RAR_WAP_I18n::e( 'tap_view' ); ?></small>
-							</span>
-						</span>
-						<span class="rar-wap-channel-details" data-rar-channel="<?php echo esc_attr( $key ); ?>"><?php echo wp_kses( $this->channel_details_html( $channel ), $allowed_details ); ?></span>
+					<label class="rw-tile<?php echo $selected === $key ? ' is-on' : ''; ?>" data-type="<?php echo esc_attr( $channel['type'] ); ?>" data-payer="<?php echo esc_attr( 'mfs' === $channel['type'] ? RAR_WAP_I18n::t( 'payer_label', $channel['label'] ) : RAR_WAP_I18n::t( 'payer_label_generic' ) ); ?>">
+						<input type="radio" name="rar_wap_channel" value="<?php echo esc_attr( $key ); ?>" <?php checked( $selected, $key ); ?>>
+						<?php echo wp_kses( $this->channel_icon_html( $channel ), $kses_ico ); ?>
+						<span class="rw-tile-name"><?php echo esc_html( $channel['label'] ); ?></span>
+						<span class="rw-check" aria-hidden="true"></span>
 					</label>
 				<?php endforeach; ?>
 			</div>
 
-			<div class="rar-wap-reference-fields">
-				<p class="form-row form-row-wide validate-required">
-					<label for="rar_wap_payer"><?php RAR_WAP_I18n::e( 'payer_label' ); ?> <span class="required">*</span></label>
-					<input type="text" class="input-text" name="rar_wap_payer" id="rar_wap_payer" autocomplete="off" inputmode="tel" maxlength="80" placeholder="<?php echo esc_attr( RAR_WAP_I18n::t( 'ph_generic_payer' ) ); ?>" value="<?php echo esc_attr( $payer ); ?>">
-				</p>
+			<div class="rw-step"><i>2</i><span><?php RAR_WAP_I18n::e( 'step_send' ); ?></span></div>
+			<p class="rw-hint rw-pick"<?php echo $current ? ' hidden' : ''; ?>><?php RAR_WAP_I18n::e( 'pick_first' ); ?></p>
+			<?php foreach ( $channels as $key => $channel ) : ?>
+				<div class="rw-panel" data-panel="<?php echo esc_attr( $key ); ?>"<?php echo $selected === $key ? '' : ' hidden'; ?>>
+					<?php echo wp_kses( $this->channel_panel_html( $channel, $amount ), $kses_panel ); ?>
+				</div>
+			<?php endforeach; ?>
 
-				<p class="form-row form-row-wide validate-required">
-					<label for="rar_wap_reference"><?php RAR_WAP_I18n::e( 'trx_label' ); ?> <span class="required">*</span></label>
+			<div class="rw-step"><i>3</i><span><?php RAR_WAP_I18n::e( 'step_confirm' ); ?></span></div>
+			<div class="rw-fields">
+				<p class="rw-field">
+					<label for="rar_wap_payer" class="rw-payer-label"><?php echo esc_html( $payer_label ); ?></label>
+					<input type="text" class="input-text" name="rar_wap_payer" id="rar_wap_payer" autocomplete="off" inputmode="tel" maxlength="80" placeholder="<?php echo esc_attr( $payer_ph ); ?>" value="<?php echo esc_attr( $payer ); ?>">
+				</p>
+				<p class="rw-field">
+					<label for="rar_wap_reference"><?php RAR_WAP_I18n::e( 'trx_label' ); ?></label>
 					<input type="text" class="input-text" name="rar_wap_reference" id="rar_wap_reference" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="60" placeholder="<?php echo esc_attr( RAR_WAP_I18n::t( 'ph_trx' ) ); ?>" value="<?php echo esc_attr( $ref ); ?>">
-					<small class="rar-wap-field-note"><?php RAR_WAP_I18n::e( 'trx_note' ); ?></small>
+					<small><?php RAR_WAP_I18n::e( 'trx_hint' ); ?></small>
 				</p>
 			</div>
 
-			<p class="rar-wap-safety"><strong>🔒 <?php RAR_WAP_I18n::e( 'security_title' ); ?></strong> <?php RAR_WAP_I18n::e( 'security' ); ?></p>
-			<p class="rar-wap-verification-note"><?php RAR_WAP_I18n::e( 'verification_note' ); ?></p>
+			<p class="rw-secure"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2 4 5v6c0 5 3.4 9.6 8 11 4.6-1.4 8-6 8-11V5l-8-3zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.8-4.8 1.4 1.4-6.2 6.2z"/></svg><span><?php RAR_WAP_I18n::e( 'secure' ); ?></span></p>
 		</div>
 		<?php
 	}
@@ -1074,6 +1110,8 @@ class RAR_WAP_Gateway extends WC_Payment_Gateway {
 			$result['error'] = RAR_WAP_I18n::t( 'err_trx' );
 			return $result;
 		}
+		// Store the canonical form (upper-case, no spaces, ASCII digits).
+		$result['reference'] = $result['normalized'];
 
 		$duplicate = RAR_WAP_Query::find_reference( $result['channel'], $result['reference'], $result['normalized'], $exclude_order_id );
 		if ( $duplicate ) {

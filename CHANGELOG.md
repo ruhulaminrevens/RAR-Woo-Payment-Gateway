@@ -1,5 +1,29 @@
 # Changelog
 
+## v2.1.0 — 2026-09-26
+
+Complete UI/UX redesign — customer checkout, customer order page, admin dashboard, settings and order panel. Fully backward compatible (same settings, gateway ID and order meta).
+
+### Added
+- Mobile-first 3-step checkout with channel tiles, single "send the money" card, copy number/amount buttons, adaptive labels and inline validation (classic and Checkout Blocks share one design).
+- Accent colour setting; container-query responsive layout.
+- Customer order card with state icon, progress tracker and fact tiles.
+- Signed, expiring guest access links for the correction page (e-mail link and after form posts) so guests are not asked to re-confirm their e-mail.
+- Dashboard: live header, KPI cards (incl. typical check time), status tabs with counts, period presets, modal/bottom-sheet actions, auto-refresh with toasts, tab-title count, 14-day trend chart, channel mix bars, team speed, recent activity, WhatsApp/call shortcuts, copy chips.
+- Settings: hero + setup checklist, tabs, toggle switches, channel cards with logo preview and status, live amount preview, sticky save bar.
+- Order panel: copy chips and Call/WhatsApp buttons.
+- New queries: daily trend, verified timing, recent activity, latest submission (polling).
+
+### Changed
+- Bilingual mode shows Bangla only under key headings (shorter checkout).
+- All customer text rewritten to be shorter and clearer.
+
+### Fixed
+- Customer "On delivery" amount while pending now shows the planned balance instead of the courier collect amount.
+- Transaction IDs stored in canonical upper-case form.
+- CI workflow checks every JavaScript file.
+
+
 ## v2.0.0 — 2026-09-26
 
 Major feature and reliability release. Backward compatible with v1.x settings, gateway ID and order metadata.

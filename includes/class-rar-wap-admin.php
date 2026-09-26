@@ -98,6 +98,44 @@ class RAR_WAP_Admin {
 		return '<div><dt>' . esc_html( $label ) . '</dt><dd>' . $value_html . '</dd></div>';
 	}
 
+	/**
+	 * WhatsApp chat link with a status-aware message for the customer.
+	 */
+	public static function whatsapp_url( WC_Order $order ) {
+		$mobile = RAR_WAP_Order::normalize_mobile( $order->get_billing_phone() );
+		if ( '' === $mobile || strlen( $mobile ) !== 11 ) {
+			return '';
+		}
+
+		$site   = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
+		$name   = $order->get_billing_first_name();
+		$number = $order->get_order_number();
+		$ref    = (string) $order->get_meta( '_rar_wap_reference' );
+
+		switch ( RAR_WAP_Order::get_status( $order ) ) {
+			case 'verified':
+				/* translators: 1: name, 2: order number, 3: site */
+				$text = sprintf( __( 'Hello %1$s, your advance payment for order #%2$s is confirmed. Thank you! — %3$s', 'rar-woo-advance-payment' ), $name, $number, $site );
+				break;
+			case 'unverified':
+				/* translators: 1: name, 2: order number, 3: TrxID, 4: site */
+				$text = sprintf( __( 'Hello %1$s, we could not find the payment for order #%2$s (TrxID %3$s). Please check the Transaction ID and reply here. — %4$s', 'rar-woo-advance-payment' ), $name, $number, $ref, $site );
+				break;
+			default:
+				/* translators: 1: name, 2: order number, 3: TrxID, 4: site */
+				$text = sprintf( __( 'Hello %1$s, we received your advance payment details for order #%2$s (TrxID %3$s) and are checking them now. — %4$s', 'rar-woo-advance-payment' ), $name, $number, $ref, $site );
+		}
+
+		return 'https://wa.me/88' . $mobile . '?text=' . rawurlencode( $text );
+	}
+
+	private static function chip( $value ) {
+		if ( '' === (string) $value ) {
+			return '—';
+		}
+		return '<button type="button" class="rwa-chip" data-copy="' . esc_attr( $value ) . '" title="' . esc_attr__( 'Copy', 'rar-woo-advance-payment' ) . '"><code>' . esc_html( $value ) . '</code>' . RAR_WAP_Dashboard::icon( 'copy' ) . '</button>';
+	}
+
 	private static function meta_or_dash( WC_Order $order, $key ) {
 		$value = (string) $order->get_meta( $key );
 		return '' === $value ? '—' : $value;
@@ -136,8 +174,8 @@ class RAR_WAP_Admin {
 			$html .= self::row( __( 'Received', 'rar-woo-advance-payment' ), '<strong>' . self::money( $order, $order->get_meta( '_rar_wap_required_amount' ) ) . '</strong>' );
 		}
 		$html .= self::row( __( 'Collect on delivery', 'rar-woo-advance-payment' ), self::money( $order, RAR_WAP_Order::collectable_amount( $order ) ) );
-		$html .= self::row( __( 'Paid from', 'rar-woo-advance-payment' ), '<code>' . esc_html( self::meta_or_dash( $order, '_rar_wap_payer' ) ) . '</code>' );
-		$html .= self::row( __( 'Transaction ID', 'rar-woo-advance-payment' ), '<code>' . esc_html( self::meta_or_dash( $order, '_rar_wap_reference' ) ) . '</code>' );
+		$html .= self::row( __( 'Paid from', 'rar-woo-advance-payment' ), self::chip( (string) $order->get_meta( '_rar_wap_payer' ) ) );
+		$html .= self::row( __( 'Transaction ID', 'rar-woo-advance-payment' ), self::chip( (string) $order->get_meta( '_rar_wap_reference' ) ) );
 		$html .= self::row( __( 'Submitted', 'rar-woo-advance-payment' ), esc_html( self::meta_or_dash( $order, '_rar_wap_submitted_at' ) ) );
 		$resubs = absint( $order->get_meta( '_rar_wap_resubmission_count' ) );
 		if ( $resubs ) {
@@ -146,6 +184,19 @@ class RAR_WAP_Admin {
 		$html .= '</dl>';
 
 		$html .= RAR_WAP_Proofs::admin_preview_html( $order );
+
+		$phone = $order->get_billing_phone();
+		$wa    = self::whatsapp_url( $order );
+		if ( $phone || $wa ) {
+			$html .= '<div class="rar-wap-contact">';
+			if ( $phone ) {
+				$html .= '<a class="button" href="tel:' . esc_attr( preg_replace( '/[^0-9+]/', '', $phone ) ) . '">' . RAR_WAP_Dashboard::icon( 'phone' ) . esc_html__( 'Call', 'rar-woo-advance-payment' ) . '</a>';
+			}
+			if ( $wa ) {
+				$html .= '<a class="button is-wa" href="' . esc_url( $wa ) . '" target="_blank" rel="noopener">' . RAR_WAP_Dashboard::icon( 'chat' ) . 'WhatsApp</a>';
+			}
+			$html .= '</div>';
+		}
 
 		if ( 'unverified' === $status && $order->get_meta( '_rar_wap_reject_reason' ) ) {
 			$html .= '<div class="rar-wap-admin-warning"><strong>' . esc_html__( 'Rejected:', 'rar-woo-advance-payment' ) . '</strong> ' . esc_html( (string) $order->get_meta( '_rar_wap_reject_reason' ) ) . '</div>';

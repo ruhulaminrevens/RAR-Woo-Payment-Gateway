@@ -6,21 +6,55 @@ Collect the **delivery fee, a fixed advance, a percentage, shipping + percentage
 
 ## Download
 
-⬇️ **[Download Latest Installable ZIP](https://raw.githubusercontent.com/ruhulaminrevens/RAR-Woo-Payment-Gateway/main/releases/RAR-Woo-Payment-Gateway-v2.0.0.zip)**
+⬇️ **[Download Latest Installable ZIP](https://raw.githubusercontent.com/ruhulaminrevens/RAR-Woo-Payment-Gateway/main/releases/RAR-Woo-Payment-Gateway-v2.1.0.zip)**
 
-Current stable version: **v2.0.0**
+Current stable version: **v2.1.0**
 
 ### Install / Update
 
 `WordPress → Plugins → Add New → Upload Plugin → choose ZIP → Install Now → Replace current with uploaded`
 
-Updating from v1.x keeps the same plugin folder (`rar-woo-advance-payment`), gateway ID (`rar_advance_payment`), settings and all order metadata. **Take a full backup first** (files + database) and test a low-value order while **Safe Test Mode** is ON.
+Updating from v1.x or v2.0 keeps the same plugin folder (`rar-woo-advance-payment`), gateway ID (`rar_advance_payment`), settings and all order metadata. **Take a full backup first** (files + database) and test a low-value order while **Safe Test Mode** is ON.
 
 After activation:
 
 - `WooCommerce → Advance Payments` — verification dashboard and queue
 - `WooCommerce → Settings → Payments → RAR Advance Payment` — gateway settings
 - `Plugins → RAR Woo Advance Payment Gateway → Settings / Dashboard`
+
+## What's new in v2.1.0 — complete UI redesign
+
+### Customer checkout (classic + Checkout Blocks)
+- Mobile-first **3-step flow**: ① choose method (large logo tiles) → ② send the money (one card with the number, the exact amount and **Copy** buttons, or the QR / bank details) → ③ enter your number + TrxID.
+- Big "Pay now" amount header with the on-delivery balance; far less text; 15–16 px type and 50 px inputs (no iOS zoom).
+- Field labels adapt to the method ("Your bKash number"), inline validation, Bangla-digit support, TrxID auto upper-case.
+- Bilingual mode now shows Bangla only under key headings, so the box stays short. English-only and বাংলা-only modes available.
+- **Accent colour** setting to match your brand; container-query layout adapts to narrow and wide checkout columns.
+
+### Customer order page
+- Status card with icon, 3-step tracker (Sent → Checking → Confirmed), advance / on-delivery / method / TrxID tiles.
+- Rejected payments show the reason and a simple correction form; optional screenshot upload.
+- Guest customers can open the correction link from e-mail without re-typing their e-mail (signed, expiring link).
+
+### Admin dashboard (WooCommerce → Advance Payments)
+- Live header, KPI cards (awaiting ৳, overdue, verified ৳, typical check time, verification rate).
+- Queue with status tabs + counts, search, channel and period presets; rows show customer, **call / WhatsApp** shortcuts, one-tap copy of TrxID and payer number, amount, collect-on-delivery and age (overdue highlighted).
+- **Verify / Reject / Reopen in a modal** (bottom sheet on phones) — no page reload; the queue refreshes itself.
+- Auto-checks for new payments every 45 s, toast notification, pending count in the tab title and menu badge.
+- Side cards: 14-day trend chart, channel mix, team (who verified, typical time), recent activity feed.
+- Fully responsive — rows become cards on phones.
+
+### Settings
+- Hero with gateway status and a **setup checklist**; tabs (General, Payment rules, Verification, Notifications, Channels); toggle switches.
+- Channel **cards** with on/off switch, logo preview and "shown at checkout" status.
+- **Live amount preview** calculator for the selected rule; sticky Save bar; phone-friendly layout.
+
+### Order screen
+- Verification panel restyled with copy chips, Call / WhatsApp buttons and accent-coloured actions.
+
+### Fixed
+- Customer page showed the courier "collect" amount (full total) as "On delivery" while a payment was pending; it now shows the planned balance.
+- Transaction IDs are stored in canonical form (upper-case, no spaces, ASCII digits) at checkout and on correction.
 
 ## What's new in v2.0.0
 

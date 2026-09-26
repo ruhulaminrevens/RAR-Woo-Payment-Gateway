@@ -59,12 +59,6 @@ final class RAR_WAP_Blocks extends AbstractPaymentMethodType {
 			);
 		}
 
-		$keys    = array( 'pay_now', 'due_on_delivery', 'transfer_exact', 'remaining_balance', 'fully_paid_now', 'step_channel', 'step_pay', 'step_submit', 'trust_manual', 'trust_nopin', 'trust_linked', 'help', 'tap_view', 'instruction', 'account_type', 'copy', 'copied', 'qr_enlarge', 'payer_label', 'trx_label', 'trx_note', 'security_title', 'security', 'verification_note', 'ph_mobile', 'ph_account', 'ph_generic_payer', 'ph_trx', 'ph_bank_trx', 'err_channel', 'err_payer', 'err_mobile', 'err_trx', 'err_sensitive' );
-		$strings = array();
-		foreach ( $keys as $key ) {
-			$strings[ $key ] = RAR_WAP_I18n::t( $key );
-		}
-
 		return array(
 			'title'       => $gateway->get_title(),
 			'description' => wp_strip_all_tags( $gateway->get_description() ),
@@ -73,7 +67,9 @@ final class RAR_WAP_Blocks extends AbstractPaymentMethodType {
 			'validateMfs' => 'no' !== $gateway->get_option( 'validate_mobile', 'yes' ),
 			'buttonText'  => trim( (string) $gateway->get_option( 'order_button_text', '' ) ),
 			'channels'    => $channels,
-			'strings'     => $strings,
+			'strings'     => RAR_WAP_I18n::js_strings(),
+			'accent'      => RAR_WAP_Gateway::accent_color( $gateway->get_option( 'accent_color', '' ) ),
+			'tints'       => RAR_WAP_Gateway::TINTS,
 			'supports'    => array_values( array_filter( $gateway->supports, array( $gateway, 'supports' ) ) ),
 		);
 	}
