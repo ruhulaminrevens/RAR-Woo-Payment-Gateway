@@ -40,8 +40,7 @@ jobs:
       - name: Validate JavaScript
         shell: bash
         run: |
-          node --check assets/js/checkout.js
-          node --check assets/js/admin.js
+          for f in assets/js/*.js; do node --check "$f"; done
 
       - name: Basic release consistency
         shell: bash
